@@ -11,9 +11,9 @@ use std::{fs,io};
 use std::io::{Cursor, Write};
 use std::process::exit;
 
-fn check_json_null(value: &json::JsonValue) {
+fn check_json_null(name: &str, value: &json::JsonValue) {
     if *value == json::Null {
-        eprintln!("❌ Error: Could not parse field \"titolo\" in file `settings.json`.\nAborting.");
+        eprintln!("❌ Error: Could not parse field \"{}\" in file `settings.json`.\nAborting.", name);
         exit(1);
     }
 }
@@ -27,7 +27,7 @@ fn clean_string(s: String) -> String {
 
 fn get_string(settings: &json::JsonValue, key: &str) -> String {
     let jv = &settings[key];
-    check_json_null(jv);
+    check_json_null(key, jv);
     if let json::JsonValue::Short(v) = jv {
         return clean_string(v.to_owned().to_string());
         
@@ -38,7 +38,7 @@ fn get_string(settings: &json::JsonValue, key: &str) -> String {
 
 fn get_data(settings: &json::JsonValue) -> (String, u64, u64, u64) {
     let jv = &settings["data"];
-    check_json_null(jv);
+    check_json_null("data", jv);
     if let json::JsonValue::Object(data) = jv {
         if let json::JsonValue::Number(giorno) = data["giorno"] {
             if let json::JsonValue::Number(mese) = data["mese"] {
@@ -62,7 +62,7 @@ fn find_images() -> Vec<std::path::PathBuf> {
     for element in std::path::Path::new(".").read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
-            if extension == "jpeg" || extension == "jpg" || extension == "png" {
+            if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
                 images.push(path);
             }
         }
@@ -88,6 +88,7 @@ fn find_files(dir: &str) -> Vec<std::path::PathBuf> {
 fn upload_dir(stream: &mut FtpStream, dir: &str) {
     println!("+ Uploading DIR `{}`...", dir);
     stream.mkdir(&dir).unwrap();
+    println!("+ [FTP]: mkdir {}", &dir);
     // stream.cwd(dir).unwrap();
     stream.transfer_type(ftp::types::FileType::Image).unwrap();
     for file in find_files(dir) {
@@ -186,9 +187,13 @@ fn main() {
     ftp_stream.login(&utente, &password).unwrap();
 
     if mese < 8 {
-        ftp_stream.cwd(&format!("{}-{}", anno - 1, anno)).unwrap();
+        let dir = format!("{}-{}", anno - 1, anno);
+        ftp_stream.cwd(&dir).unwrap();
+        println!("[FTP]: cd {}/", dir);
     } else {
-        ftp_stream.cwd(&format!("{}-{}", anno, anno + 1)).unwrap();
+        let dir = format!("{}-{}", anno, anno + 1);
+        ftp_stream.cwd(&dir).unwrap();
+        println!("[FTP]: cd {}/", dir);
     }
 
     upload_dir(&mut ftp_stream, &dir_path);
