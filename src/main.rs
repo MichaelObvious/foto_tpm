@@ -13,7 +13,7 @@ use std::process::exit;
 
 fn check_json_null(name: &str, value: &json::JsonValue) {
     if *value == json::Null {
-        eprintln!("❌ Error: Could not parse field \"{}\" in file `settings.json`.\nAborting.", name);
+        eprintln!("[ERROR]: Could not parse field \"{}\" in file `settings.json`.\nAborting.", name);
         exit(1);
     }
 }
@@ -32,7 +32,7 @@ fn get_string(settings: &json::JsonValue, key: &str) -> String {
         return clean_string(v.to_owned().to_string());
         
     }
-    eprintln!("❌ Error: Field \"{}\" in file `settings.json` is supposed to be a string.\nAborting.", key);
+    eprintln!("[ERROR]: Field \"{}\" in file `settings.json` is supposed to be a string.\nAborting.", key);
     exit(1);
 }
 
@@ -53,7 +53,7 @@ fn get_data(settings: &json::JsonValue) -> (String, u64, u64, u64) {
         
     }
 
-    eprintln!("❌ Error: Field \"data\" in file `settings.json` is invalid.\nAborting.");
+    eprintln!("[ERROR]: Field \"data\" in file `settings.json` is invalid.\nAborting.");
     exit(1);
 }
 
@@ -99,7 +99,7 @@ fn upload_dir(stream: &mut FtpStream, dir: &str) {
         let mut reader = Cursor::new(content);
 
         stream.put(&file.to_str().unwrap(), &mut reader).unwrap();
-        println!(" 🆗");
+        println!(" done!");
     }
 }
 
@@ -111,14 +111,14 @@ fn main() {
     io::stdout().flush().unwrap();
 
     let settings_file = fs::read_to_string("settings.json")
-        .expect("❌ Error: Could not find `settings.json`.\nAborting.");
+        .expect("[ERROR]: Could not find `settings.json`.\nAborting.");
     
-    println!(" 🆗");
+    println!(" done!");
     print!("+ Parsing `settings.json`...");
     io::stdout().flush().unwrap();
 
     let settings = json::parse(&settings_file)
-        .expect("❌ Error: Could not parse `settings.json`.\nAborting.");
+        .expect("[ERROR]: Could not parse `settings.json`.\nAborting.");
 
     let titolo = get_string(&settings, "titolo");
     let branca = get_string(&settings, "branca").to_uppercase();
@@ -128,7 +128,7 @@ fn main() {
 
     let (data, anno, mese, _) = get_data(&settings);
 
-    println!(" 🆗");
+    println!(" done!");
 
     println!();
     println!("--- IMAGES ---");
@@ -139,7 +139,7 @@ fn main() {
     io::stdout().flush().unwrap();
     let _ = fs::remove_dir_all(dir_path.clone());
     fs::create_dir(dir_path.clone()).unwrap();
-    println!(" 🆗");
+    println!(" done!");
 
 
     let images = find_images();
@@ -160,8 +160,8 @@ fn main() {
 
         let new_name = format!("{}/{}_{}_{}_{:03}.JPG", dir_path, data, branca, titolo, n + 1);
 
-        img_scaled.save(new_name.clone()).expect("❌ Error: Could not save image.\nAborting.");
-        println!(" 🆗\n    -> Saved as `{}`!", new_name);
+        img_scaled.save(new_name.clone()).expect("[ERROR]: Could not save image.\nAborting.");
+        println!(" done!\n    -> Saved as `{}`!", new_name);
     }
 
     println!();
@@ -171,7 +171,7 @@ fn main() {
     let mut input = String::new();
     io::stdin()
         .read_line(&mut input)
-        .expect("Could not understand your command");
+        .expect("Could not understand input");
 
     let answer = input.trim();
 
