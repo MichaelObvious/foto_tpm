@@ -29,11 +29,15 @@ fn get_string(settings: &json::JsonValue, key: &str) -> String {
     let jv = &settings[key];
     check_json_null(key, jv);
     if let json::JsonValue::Short(v) = jv {
-        return clean_string(v.to_owned().to_string());
+        return v.to_owned().to_string();
         
     }
     eprintln!("[ERROR]: Field \"{}\" in file `settings.json` is supposed to be a string.\nAborting.", key);
     exit(1);
+}
+
+fn get_clean_string(settings: &json::JsonValue, key: &str) -> String {
+    return clean_string(get_string(&settings, &key));
 }
 
 fn get_data(settings: &json::JsonValue) -> (String, u64, u64, u64) {
@@ -120,8 +124,8 @@ fn main() {
     let settings = json::parse(&settings_file)
         .expect("[ERROR]: Could not parse `settings.json`.\nAborting.");
 
-    let titolo = get_string(&settings, "titolo");
-    let branca = get_string(&settings, "branca").to_uppercase();
+    let titolo = get_clean_string(&settings, "titolo");
+    let branca = get_clean_string(&settings, "branca").to_uppercase();
     let server = get_string(&settings, "server");
     let utente = get_string(&settings, "utente");
     let password = get_string(&settings, "password");
