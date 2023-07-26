@@ -7,7 +7,7 @@ use image::io::Reader as ImageReader;
 use image::GenericImageView;
 use image::imageops::FilterType::Triangle;
 
-use std::{fs,io};
+use std::{fs,io, env};
 use std::io::{Cursor, Write};
 use std::process::exit;
 
@@ -107,9 +107,22 @@ fn upload_dir(stream: &mut FtpStream, dir: &str) {
     }
 }
 
+fn yes_no_question(question: &str) -> bool {
+    print!("{} [Y]/n ", question);
+    io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Could not understand input");
+
+    let answer = input.trim();
+
+    return answer == "Y" || answer == "y" || answer == "yes" || answer == "YES" || answer == "Yes";
+}
+
 fn main() {
     println!("--- SETTINGS ---");
-
 
     print!("+ Searching for configuration file: `settings.json`...");
     io::stdout().flush().unwrap();
@@ -131,77 +144,78 @@ fn main() {
     let password = get_string(&settings, "password");
 
     let (data, anno, mese, _) = get_data(&settings);
+    let dir_path = format!("{}_{}_{}", data, branca, titolo);
 
     println!(" done!");
+
+
+    let process_image_question = match env::current_dir() {
+        Ok(cwd) => format!("Process images in current directory (`{}`)?", cwd.to_string_lossy()),
+        Err(_) => "Process images in current directory (`{}`)?".to_owned(),
+    };
 
     println!();
-    println!("--- IMAGES ---");
+    if yes_no_question(&process_image_question) {
 
-    
-    let dir_path = format!("{}_{}_{}", data, branca, titolo);
-    print!("+ Creating dir `{}`...", dir_path);
-    io::stdout().flush().unwrap();
-    let _ = fs::remove_dir_all(dir_path.clone());
-    fs::create_dir(dir_path.clone()).unwrap();
-    println!(" done!");
+        println!();
+        println!("--- IMAGES ---");
+
+        
+        print!("+ Creating dir `{}`...", dir_path);
+        io::stdout().flush().unwrap();
+        let _ = fs::remove_dir_all(dir_path.clone());
+        fs::create_dir(dir_path.clone()).unwrap();
+        println!(" done!");
 
 
-    let images = find_images();
+        let images = find_images();
 
-    for (n, path) in images.iter().enumerate() {
-        print!("  + Processing `{:?}`... ", path);
-        std::io::stdout().flush().unwrap();
+        for (n, path) in images.iter().enumerate() {
+            print!("  + Processing `{:?}`... ", path);
+            std::io::stdout().flush().unwrap();
 
-        let img = ImageReader::open(path).unwrap().decode().unwrap();
-        let size = img.dimensions();
+            let img = ImageReader::open(path).unwrap().decode().unwrap();
+            let size = img.dimensions();
 
-        let img_scaled;
-        if size.0 > size.1 {
-            img_scaled = img.resize_to_fill(800, 600, Triangle);
+            let img_scaled;
+            if size.0 > size.1 {
+                img_scaled = img.resize_to_fill(800, 600, Triangle);
+            } else {
+                img_scaled = img.resize_to_fill(600, 800, Triangle);
+            }
+
+            let new_name = format!("{}/{}_{}_{}_{:03}.JPG", dir_path, data, branca, titolo, n + 1);
+
+            img_scaled.save(new_name.clone()).expect("[ERROR]: Could not save image.\nAborting.");
+            println!(" done!\n    -> Saved as `{}`!", new_name);
+        }
+    } else {
+        println!("Ok. The current directory is not going to be processed.");
+    }
+
+    println!();
+    if yes_no_question(&format!("Upload photos in `{}`?", dir_path)) {
+        println!();
+        println!("--- FTP ---");
+
+        let mut ftp_stream = FtpStream::connect(format!("{}:21", server)).unwrap();
+        ftp_stream.login(&utente, &password).unwrap();
+
+        if mese < 8 {
+            let dir = format!("{}-{}", anno - 1, anno);
+            ftp_stream.cwd(&dir).unwrap();
+            println!("[FTP]: cd {}/", dir);
         } else {
-            img_scaled = img.resize_to_fill(600, 800, Triangle);
+            let dir = format!("{}-{}", anno, anno + 1);
+            ftp_stream.cwd(&dir).unwrap();
+            println!("[FTP]: cd {}/", dir);
         }
 
-        let new_name = format!("{}/{}_{}_{}_{:03}.JPG", dir_path, data, branca, titolo, n + 1);
+        upload_dir(&mut ftp_stream, &dir_path);
 
-        img_scaled.save(new_name.clone()).expect("[ERROR]: Could not save image.\nAborting.");
-        println!(" done!\n    -> Saved as `{}`!", new_name);
-    }
-
-    println!();
-    print!("Upload photos? [Y]/n ");
-    io::stdout().flush().unwrap();
-
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Could not understand input");
-
-    let answer = input.trim();
-
-    if !(answer == "Y" || answer == "y" || answer == "yes" || answer == "YES" || answer == "Yes") {
-        println!("Ok. The photos are not going to be uploaded.\nExiting...");
-        exit(0);
-    }
-
-    println!();
-    println!("--- FTP ---");
-
-    let mut ftp_stream = FtpStream::connect(format!("{}:21", server)).unwrap();
-    ftp_stream.login(&utente, &password).unwrap();
-
-    if mese < 8 {
-        let dir = format!("{}-{}", anno - 1, anno);
-        ftp_stream.cwd(&dir).unwrap();
-        println!("[FTP]: cd {}/", dir);
+        let _ = ftp_stream.quit();
     } else {
-        let dir = format!("{}-{}", anno, anno + 1);
-        ftp_stream.cwd(&dir).unwrap();
-        println!("[FTP]: cd {}/", dir);
+        println!("Ok. The photos are not going to be uploaded.");
     }
-
-    upload_dir(&mut ftp_stream, &dir_path);
-
-    let _ = ftp_stream.quit();
 
 }
