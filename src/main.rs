@@ -7,7 +7,8 @@ use image::io::Reader as ImageReader;
 use image::GenericImageView;
 use image::imageops::FilterType::Triangle;
 
-use std::{fs,io, env};
+use std::path::PathBuf;
+use std::{fs,io, env, vec};
 use std::io::{Cursor, Write};
 use std::process::exit;
 
@@ -30,10 +31,28 @@ fn get_string(settings: &json::JsonValue, key: &str) -> String {
     check_json_null(key, jv);
     if let json::JsonValue::Short(v) = jv {
         return v.to_owned().to_string();
-        
+
     }
     eprintln!("[ERROR]: Field \"{}\" in file `settings.json` is supposed to be a string.\nAborting.", key);
     exit(1);
+}
+
+fn get_array_of_strings(settings: &json::JsonValue, key: &str) -> Result<Vec<String>, ()> {
+    let jv = &settings[key];
+    check_json_null(key, jv);
+    if let json::JsonValue::Array(v) = jv {
+        let mut array = vec![];
+        for x in v.iter() {
+            if let json::JsonValue::Short(s) = x {
+                array.push(s.to_owned().to_string());
+            }
+        }
+        return Ok(array);
+
+    }
+    // eprintln!("[ERROR]: Field \"{}\" in file `settings.json` is supposed to be a string.\nAborting.", key);
+    // exit(1);
+    Err(())
 }
 
 fn get_clean_string(settings: &json::JsonValue, key: &str) -> String {
@@ -47,22 +66,22 @@ fn get_data(settings: &json::JsonValue) -> (String, u64, u64, u64) {
         if let json::JsonValue::Number(giorno) = data["giorno"] {
             if let json::JsonValue::Number(mese) = data["mese"] {
                 if let json::JsonValue::Number(anno) = data["anno"] {
-                    let s = format!("{}{:02}{:02}", anno.as_parts().1 % 100, mese.as_parts().1 % 100, giorno.as_parts().1 % 100); 
+                    let s = format!("{}{:02}{:02}", anno.as_parts().1 % 100, mese.as_parts().1 % 100, giorno.as_parts().1 % 100);
                     if s.len() == 6 {
                         return (s, anno.as_parts().1, mese.as_parts().1, giorno.as_parts().1);
                     }
                 }
             }
         }
-        
+
     }
 
     eprintln!("[ERROR]: Field \"data\" in file `settings.json` is invalid.\nAborting.");
     exit(1);
 }
 
-fn find_images() -> Vec<std::path::PathBuf> {
-    let mut images: Vec<std::path::PathBuf> = Vec::new();
+fn find_images() -> Vec<PathBuf> {
+    let mut images: Vec<PathBuf> = Vec::new();
     for element in std::path::Path::new(".").read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
@@ -71,19 +90,35 @@ fn find_images() -> Vec<std::path::PathBuf> {
             }
         }
     }
-    
+
     images.sort();
 
     return images;
 }
 
-fn find_files(dir: &str) -> Vec<std::path::PathBuf> {
-    let mut paths: Vec<std::path::PathBuf> = Vec::new();
+fn check_images_paths(files: &Vec<String>) -> Vec<PathBuf> {
+    let mut images = vec![];
+    for f in files {
+        let p = PathBuf::from(f);
+        if let Some(extension) = p.extension() {
+            if p.exists() {
+                if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
+                    images.push(p);
+                }
+            }
+        }
+    }
+
+    return images;
+}
+
+fn find_files(dir: &str) -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = Vec::new();
     for element in std::path::Path::new(dir).read_dir().unwrap() {
         let path = element.unwrap().path();
         paths.push(path);
     }
-    
+
     paths.sort();
 
     return paths;
@@ -129,7 +164,7 @@ fn main() {
 
     let settings_file = fs::read_to_string("settings.json")
         .expect("[ERROR]: Could not find `settings.json`.\nAborting.");
-    
+
     println!(" done!");
     print!("+ Parsing `settings.json`...");
     io::stdout().flush().unwrap();
@@ -146,12 +181,21 @@ fn main() {
     let (data, anno, mese, _) = get_data(&settings);
     let dir_path = format!("{}_{}_{}", data, branca, titolo);
 
+    let mut images = if let Ok(files) = get_array_of_strings(&settings, "files") {
+        check_images_paths(&files)
+    } else {
+        Vec::new()
+    };
+
     println!(" done!");
 
-
-    let process_image_question = match env::current_dir() {
-        Ok(cwd) => format!("Process images in current directory (`{}`)?", cwd.to_string_lossy()),
-        Err(_) => "Process images in current directory (`{}`)?".to_owned(),
+    let process_image_question = if images.len() > 0 {
+        String::from("Process given images?")
+    } else {
+        match env::current_dir() {
+            Ok(cwd) => format!("Process images in current directory (`{}`)?", cwd.to_string_lossy()),
+            Err(_) => "Process images in current directory (`{}`)?".to_owned(),
+        }
     };
 
     println!();
@@ -160,15 +204,15 @@ fn main() {
         println!();
         println!("--- IMAGES ---");
 
-        
         print!("+ Creating dir `{}`...", dir_path);
         io::stdout().flush().unwrap();
         let _ = fs::remove_dir_all(dir_path.clone());
         fs::create_dir(dir_path.clone()).unwrap();
         println!(" done!");
 
-
-        let images = find_images();
+        if images.len() == 0 {
+            images = find_images();
+        }
 
         for (n, path) in images.iter().enumerate() {
             print!("  + Processing `{:?}`... ", path);
