@@ -10,3 +10,10 @@ edition = "2018"
 image = "0.23.14"
 json = "0.12.4"
 ftp = "3.0.1"
+strum = "0.25"
+strum_macros = "0.25"
+
+[dependencies.raylib]
+version = "4.5.0"
+git = "https://github.com/litten2up/raylib-rs"
+branch = "4.5.0"
