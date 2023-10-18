@@ -7,6 +7,7 @@ use ftp::FtpStream;
 use image::io::Reader as ImageReader;
 use image::{GenericImageView, DynamicImage};
 use image::imageops::FilterType::Triangle;
+use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
 
 use strum::IntoEnumIterator;
@@ -723,12 +724,15 @@ fn gui_app() {
                         list_moved_by_key = false;
                     }
 
-                    let list_y = (h as f32 / 4.0).max(167.0);
+                    let list_rect = Rectangle { x:0.0, y:(h as f32 / 4.0).max(167.0), width: w as f32/5.0, height: (h as f32 * 3.0 / 4.0).min(h as f32-167.0)};
 
                     if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-                        let idx = ((d.get_mouse_y() as f32 - list_y) / item_height as f32).floor();
-                        if idx >= 0.0 {
-                            file_list_active = file_list_scroll_index + idx as i32;
+                        let mouse_in_boundaries = unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), list_rect.into())};
+                        if mouse_in_boundaries {
+                            let idx = ((d.get_mouse_y() as f32 - list_rect.y) / item_height as f32).floor();
+                            if idx >= 0.0 {
+                                file_list_active = file_list_scroll_index + idx as i32;
+                            }
                         }
                     }
 
@@ -736,7 +740,7 @@ fn gui_app() {
                     let list_cstr_text = CString::new(list_text).unwrap_or_default();
                     // let list_cstr = CString::new(list_text).unwrap_or_default();
                     
-                    d.gui_list_view(Rectangle {x: 0.0, y: list_y, width: w as f32/5.0, height:(h as f32 * 3.0 / 4.0).min(h as f32-167.0)}, Some(list_cstr_text.as_c_str()), &mut file_list_scroll_index, file_list_active);
+                    d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut file_list_scroll_index, file_list_active);
                 }
             };
         } else {
