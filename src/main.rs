@@ -290,7 +290,6 @@ fn console_app() {
 
 #[derive(Debug, EnumIter, Eq, PartialEq, Copy, Clone)]
 enum AppTab {
-    DropFiles,
     InputData,
     SelectionLab,
 }
@@ -299,9 +298,8 @@ impl fmt::Display for AppTab {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use AppTab::*;
         write!(f, "{}", match self {
-            DropFiles => "Rilascia",
             InputData => "Dati",
-            SelectionLab => "Riordina",
+            SelectionLab => "Foto",
         })
     }
 }
@@ -335,11 +333,11 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
         }       
         d.draw_text(label.as_str(),
             rect.x as i32 + (rect.width as i32 - label_width)/2,
-            rect.y as i32 - (font_size + button_padding as i32/2),
+            rect.y as i32 + (rect.height as i32 - font_size)/2,
             font_size,
             if e == *active_tab {
-                THEME_COLOR
-            } else {Color::WHITE}
+                Color::WHITE
+            } else {Color::GRAY}
             );
     }
 }
@@ -353,7 +351,7 @@ fn gui_app() {
 
     rl.set_exit_key(None);
 
-    let mut app_tab = AppTab::DropFiles;
+    let mut app_tab = AppTab::SelectionLab;
     let mut upload = false;
     let mut upload_status = UploadStatus::None;
 
@@ -409,10 +407,6 @@ fn gui_app() {
         if !upload {
             // Update
             match app_tab {
-                AppTab::DropFiles => {
-                    let new_files = check_images_paths(&rl.load_dropped_files());
-                    file_queue.append(&mut new_files.into());
-                },
                 AppTab::InputData => {
                     if rl.is_key_pressed(KeyboardKey::KEY_TAB) {
                         text_box_active = (text_box_active + 1) % 8;
@@ -449,6 +443,9 @@ fn gui_app() {
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut pw_buf, 32, pw_rect);
                 },
                 AppTab::SelectionLab => {
+                    let new_files = check_images_paths(&rl.load_dropped_files());
+                    file_queue.append(&mut new_files.into());
+
                     if let Some(path) = file_queue.pop_front() {
                         let img = ImageReader::open(path.clone()).unwrap().decode().unwrap();
                         let img_scaled;
@@ -666,19 +663,6 @@ fn gui_app() {
         d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
         if !upload {
             match app_tab {
-                AppTab::DropFiles => {
-                    draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
-
-                    let drop_text = "Rilascia le foto";
-                    let drop_text_width = measure_text(drop_text, font_size*2);
-                    d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
-
-                    if !file_queue.is_empty() {
-                        let load_text = format!("{} foto messe in coda", file_queue.len());
-                        let load_text_width = measure_text(load_text.as_str(), font_size);
-                        d.draw_text(load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, Color::WHITE);
-                    }
-                },
                 AppTab::InputData => {
                     draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
                     let mut idx = 0;
@@ -692,7 +676,13 @@ fn gui_app() {
                     gui::gui_seecret_text_input(&mut d, &mut idx, text_box_active, "Password", &mut pw_buf, font_size, pw_rect);
                 },
                 AppTab::SelectionLab => {
-                    if !images.is_empty() {
+                    if images.is_empty() {
+                        draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
+
+                        let drop_text = "Rilasci le foto";
+                        let drop_text_width = measure_text(drop_text, font_size*2);
+                        d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
+                    } else {
                         let img_w = images[file_list_active as usize].1.width() as f32;
                         let img_h = images[file_list_active as usize].1.height() as f32;
                         let scale_x = (w as f32 * 4.0/5.0)/img_w;
@@ -700,47 +690,47 @@ fn gui_app() {
                         let scale = scale_x.min(scale_y);
 
                         d.draw_texture_ex(&images[file_list_active as usize].2, Vector2 {x: ((1+2)*w) as f32/5.0 - (img_w * scale) / 2.0, y: (h as f32 / 4.0).max(167.0)}, 0.0, scale, Color::WHITE);
-                    }
 
-                    draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
+                        draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
 
-                    let upload_button_width = (120f32).max(w as f32 / 12.0);
-                    let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
-                    let upload_text = CString::new("upload").unwrap();
-                    let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
-                    upload = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) && !input_not_given;
-                    
-                    if !file_queue.is_empty() {
-                        let load_text = format!("Caricando {} foto...", file_queue.len());
-                        let load_text_width = measure_text(load_text.as_str(), font_size);
-                        d.draw_text(load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, Color::WHITE);
-                    }
+                        let upload_button_width = (120f32).max(w as f32 / 12.0);
+                        let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
+                        let upload_text = CString::new("upload").unwrap();
+                        let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
+                        upload = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) && !input_not_given;
+                        
+                        if !file_queue.is_empty() {
+                            let load_text = format!("Caricando {} foto...", file_queue.len());
+                            let load_text_width = measure_text(load_text.as_str(), font_size);
+                            d.draw_text(load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, Color::WHITE);
+                        }
 
-                    let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
-                    if list_moved_by_key {
-                        let max_viewable_index = file_list_scroll_index + (h * 3 / 4) / item_height;
-                        file_list_scroll_index += (file_list_active - max_viewable_index + 1).max(0) - (file_list_scroll_index - file_list_active).max(0);
-                        file_list_scroll_index = file_list_scroll_index.clamp(0, (images.len() as i32 -max_viewable_index-1).max(0));
-                        list_moved_by_key = false;
-                    }
+                        let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
+                        if list_moved_by_key {
+                            let max_viewable_index = file_list_scroll_index + (h * 3 / 4) / item_height;
+                            file_list_scroll_index += (file_list_active - max_viewable_index + 1).max(0) - (file_list_scroll_index - file_list_active).max(0);
+                            file_list_scroll_index = file_list_scroll_index.clamp(0, (images.len() as i32 -max_viewable_index-1).max(0));
+                            list_moved_by_key = false;
+                        }
 
-                    let list_rect = Rectangle { x:0.0, y:(h as f32 / 4.0).max(167.0), width: w as f32/5.0, height: (h as f32 * 3.0 / 4.0).min(h as f32-167.0)};
+                        let list_rect = Rectangle { x:0.0, y:(h as f32 / 4.0).max(167.0), width: w as f32/5.0, height: (h as f32 * 3.0 / 4.0).min(h as f32-167.0)};
 
-                    if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-                        let mouse_in_boundaries = unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), list_rect.into())};
-                        if mouse_in_boundaries {
-                            let idx = ((d.get_mouse_y() as f32 - list_rect.y) / item_height as f32).floor();
-                            if idx >= 0.0 {
-                                file_list_active = file_list_scroll_index + idx as i32;
+                        if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
+                            let mouse_in_boundaries = unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), list_rect.into())};
+                            if mouse_in_boundaries {
+                                let idx = ((d.get_mouse_y() as f32 - list_rect.y) / item_height as f32).floor();
+                                if idx >= 0.0 {
+                                    file_list_active = file_list_scroll_index + idx as i32;
+                                }
                             }
                         }
-                    }
 
-                    let list_text = images.iter().map(|a| a.0.clone()).collect::<Vec<_>>().join("\n");
-                    let list_cstr_text = CString::new(list_text).unwrap_or_default();
-                    // let list_cstr = CString::new(list_text).unwrap_or_default();
-                    
-                    d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut file_list_scroll_index, file_list_active);
+                        let list_text = images.iter().map(|a| a.0.clone()).collect::<Vec<_>>().join("\n");
+                        let list_cstr_text = CString::new(list_text).unwrap_or_default();
+                        // let list_cstr = CString::new(list_text).unwrap_or_default();
+                        
+                        d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut file_list_scroll_index, file_list_active);
+                    }
                 }
             };
         } else {
