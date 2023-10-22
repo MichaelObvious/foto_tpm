@@ -15,20 +15,17 @@ cargo run --release
 
 ## Utilizzo
 
-Nella scheda `Dati` inserire:
-
-- Il titolo dell'attività
-- La branca (`CASTO`/`LUPI`/`ESPLO`/`PIO`/`SEZIONE`/...)
-- La data in cui si è svolta l'attività (giorno, mese e _ultime due cifre_ anno)
-- Il server su cui caricarle
-- Il nome utente per accedere al server
-- La password per accedere al server
-
-Nella scheda `Foto` rilasciare le foto. Riordinarle con le [scorciatoie da tastiera](#scheda-foto).
-
-Una volta terminato il riodinto e la correzione, controllare la correttezza dei `Dati`. Premere poi il tasto `Upload`.
-
-Le foto verranno salvate in una cartella, e poi si potrà scegliere se caricarle o meno sul server.
+1. Nella scheda `Dati` inserire:
+    - Il titolo dell'attività
+    - La branca (`CASTO`/`LUPI`/`ESPLO`/`PIO`/`SEZIONE`/...)
+    - La data in cui si è svolta l'attività (giorno, mese e _ultime due cifre_ anno)
+    - Il server su cui caricarle
+    - Il nome utente per accedere al server
+    - La password per accedere al server
+2. Nella scheda `Foto` rilasciare le foto. _(Mentre vengono caricate, le foto vengono già ritagliate automaticamente per essere 600x800 o 800x600)_
+3. Riordinarle con le [scorciatoie da tastiera](#scheda-foto).
+4. Una volta terminato il riodinto e la correzione, controllare la correttezza dei `Dati`. Premere poi il tasto `Upload`.
+5. Le foto verranno salvate in una cartella, e poi si potrà scegliere se caricarle o meno sul server.
 
 ## Scorciatoie da tastiera
 
