@@ -22,10 +22,11 @@ cargo run --release
     - Il server su cui caricarle
     - Il nome utente per accedere al server
     - La password per accedere al server
-2. Nella scheda `Foto` rilasciare le foto. _(Mentre vengono caricate, le foto vengono già ritagliate automaticamente per essere 600x800 o 800x600)_
+2. Nella scheda `Foto` rilasciare le foto. _(Mentre vengono caricate, le foto vengono già ridimensionate e ritagliate automaticamente per essere 600x800 o 800x600)_
 3. Riordinarle con le [scorciatoie da tastiera](#scheda-foto).
-4. Una volta terminato il riodinto e la correzione, controllare la correttezza dei `Dati`. Premere poi il tasto `Upload`.
-5. Le foto verranno salvate in una cartella, e poi si potrà scegliere se caricarle o meno sul server.
+4. Una volta terminato il riodinto e la correzione, controllare la correttezza dei `Dati`.
+5. Nella scheda `Foto` premere poi il tasto `Upload`.
+6. Le foto verranno salvate in una cartella, e poi si potrà scegliere se caricarle o meno sul server.
 
 ## Scorciatoie da tastiera
 
