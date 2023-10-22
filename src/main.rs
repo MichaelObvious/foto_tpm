@@ -351,7 +351,7 @@ fn gui_app() {
 
     rl.set_exit_key(None);
 
-    let mut app_tab = AppTab::SelectionLab;
+    let mut app_tab = AppTab::InputData;
     let mut upload = false;
     let mut upload_status = UploadStatus::None;
 
@@ -514,7 +514,11 @@ fn gui_app() {
 
                     if rl.is_key_pressed(KeyboardKey::KEY_R) {
                         if file_list_active >= 0 && !images.is_empty() {
-                            let rotated_image = images[file_list_active as usize].1.rotate90();
+                            let rotated_image = if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
+                                images[file_list_active as usize].1.rotate270()
+                            } else {
+                                images[file_list_active as usize].1.rotate90()
+                            };
                             let mut bytes = rotated_image.as_rgb8().unwrap().as_raw().to_owned();
                             
                             let rimg = unsafe{
