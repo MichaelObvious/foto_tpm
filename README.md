@@ -2,12 +2,35 @@
 
 Scegli le foto e riordinale. Il programma le croppa e le carica automaticamente.
 
-## Installazione
+## "Installazione"
 
-- Installare [il compilatore per il linguaggio Rust](https://www.rust-lang.org/tools/install).
-- Scaricare il [codice sorgente](https://github.com/MichaelObvious/foto_tpm/archive/refs/heads/master.zip).
-- Estrarre la cartella scaricata.
-- Nella cartella estratta, aprire il terminale e digitare il comando seguente per far partire il programma. (La prima volta si dovrà attendere un pochino)
+### Windows
+
+1. Scaricare il pacchetto corrispondente dalla pagina [`Releases`](https://github.com/MichaelObvious/foto_tpm/releases)
+2. Estrarre la cartella scaricata.
+3. Fare doppio click sull'applicazione nella cartella estratta per far partire il programma.
+
+### MacOS
+
+**Prerequisiti:** [Wine](https://wiki.winehq.org). Per l'installazione fare capo a questa [guida](https://wiki.winehq.org/MacOS), e in particolare alla sezione `Installing Wine packages using homebrew`.
+
+1. Scaricare il pacchetto che termina in **`_win64.zip`** dalla pagina [`Releases`](https://github.com/MichaelObvious/foto_tpm/releases)
+2. Estrarre la cartella scaricata.
+3. Aprire il terminale nella cartella estratta.
+4. Per far partire il programma digitare il seguente comando nel terminale:
+
+```
+wine foto_tre_pini.exe
+```
+
+### Linux
+
+**Prerequisiti:** gli stessi di [raylib](https://github.com/raysan5/raylib). Fare riferimento a questa [guida](https://github.com/CapsCollective/raylib-cpp-starter/blob/main/docs/InstallingDependencies.md).
+
+1. Installare [il compilatore per il linguaggio Rust](https://www.rust-lang.org/tools/install).
+2. Scaricare il [codice sorgente](https://github.com/MichaelObvious/foto_tpm/archive/refs/heads/master.zip).
+3. Estrarre la cartella scaricata.
+4. Nella cartella estratta, aprire il terminale e digitare il comando seguente per far partire il programma. (La prima volta si dovrà attendere un pochino)
 
 ```sh
 cargo run --release
