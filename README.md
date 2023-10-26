@@ -12,7 +12,7 @@ Scegli le foto e riordinale. Il programma le croppa e le carica automaticamente.
 
 ### MacOS
 
-**Prerequisiti:** [Wine](https://en.wikipedia.org/wiki/Wine_(software)). Per l'installazione fare capo a questa [guida](https://wiki.winehq.org/MacOS), e in particolare alla sezione `Installing Wine packages using homebrew`.
+**Prerequisiti:** [Wine](https://it.wikipedia.org/wiki/Wine). Per l'installazione fare capo a questa [guida](https://wiki.winehq.org/MacOS), e in particolare alla sezione `Installing Wine packages using homebrew`.
 
 1. Scaricare il pacchetto che termina in **`_win64.zip`** dalla pagina [`Releases`](https://github.com/MichaelObvious/foto_tpm/releases)
 2. Estrarre la cartella scaricata.
