@@ -1,6 +1,6 @@
 # FotoTPM
 
-Scegli le foto e riordinale. Il programma le croppa e le carica automaticamente.
+Scegli le foto e riordinale. Il programma le ridimensiona e le carica automaticamente.
 
 ## "Installazione"
 
