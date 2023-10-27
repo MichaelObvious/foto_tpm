@@ -1,6 +1,6 @@
 [package]
 name = "foto_tre_pini"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Michael Obvious <michele.palese42@outlook.it>"]
 edition = "2018"
 
