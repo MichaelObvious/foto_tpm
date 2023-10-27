@@ -19,7 +19,7 @@ Scegli le foto e riordinale. Il programma le ridimensiona e le carica automatica
 3. Aprire il terminale nella cartella estratta.
 4. Per far partire il programma digitare il seguente comando nel terminale:
 
-```
+```sh
 wine foto_tre_pini.exe
 ```
 
