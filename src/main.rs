@@ -23,7 +23,7 @@ use std::process::exit;
 
 mod gui;
 
-const THEME_COLOR: Color = Color::new(53, 135, 255, 255);
+const THEME_COLOR: Color = Color::new(85, 138, 255, 255);
 const BACKGROUND_COLOR: Color = Color::new(0x18, 0x18, 0x18, 0xff);
 
 #[allow(dead_code)]
@@ -675,6 +675,9 @@ fn gui_app() {
         let mut d = rl.begin_drawing(&thread);
         (w, h) = (d.get_screen_width(), d.get_screen_height());
         font_size = h/42;
+        // d.gui_set_style(GuiControl::DEFAULT, GuiControlProperty::BASE_COLOR_NORMAL as i32, GUI_NORMAL_COLOR.color_to_int());
+        // d.gui_set_style(GuiControl::DEFAULT, GuiControlProperty::BASE_COLOR_FOCUSED as i32, GUI_FOCUSED_COLOR.color_to_int());
+        // d.gui_set_style(GuiControl::DEFAULT, GuiControlProperty::BASE_COLOR_PRESSED as i32, GUI_PRESSED_COLOR.color_to_int());
         d.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::TEXT_SIZE as i32, font_size);
         d.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::BACKGROUND_COLOR as i32, BACKGROUND_COLOR.color_to_int());
 
@@ -720,7 +723,14 @@ fn gui_app() {
                         let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
                         let upload_text = CString::new("upload").unwrap_or_default();
                         let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
-                        upload = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) && !input_not_given;
+                        let upload_pressed = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str()));
+
+                        if upload_pressed {
+                            upload = true;
+                            if input_not_given {
+                                upload_status = UploadStatus::Error(format!("Alcuni voci nella scheda `{}` non sono state compilate.", AppTab::InputData));
+                            }
+                        }
                         
                         if !file_queue.is_empty() {
                             let load_text = format!("Caricando {} foto...", file_queue.len());
