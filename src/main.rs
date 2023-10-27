@@ -448,31 +448,38 @@ fn gui_app() {
                     file_queue.append(&mut new_files.into());
 
                     if let Some(path) = file_queue.pop_front() {
-                        let img = ImageReader::open(path.clone()).unwrap().decode().unwrap();
-                        let img_scaled;
-                        let size = img.dimensions();
-                        if size.0 > size.1 {
-                            img_scaled = img.resize_to_fill(800, 600, Triangle);
-                        } else {
-                            img_scaled = img.resize_to_fill(600, 800, Triangle);
+                        if let Ok(img_) = ImageReader::open(path.clone()) {
+                            if let Ok(img) = img_.decode() {
+                                let img_scaled;
+                                let size = img.dimensions();
+                                if size.0 > size.1 {
+                                    img_scaled = img.resize_to_fill(800, 600, Triangle);
+                                } else {
+                                    img_scaled = img.resize_to_fill(600, 800, Triangle);
+                                }
+                                if let Some(bytes_) = img_scaled.as_rgb8() {
+                                    let mut bytes = bytes_.as_raw().to_owned();
+                                    
+                                    let rimg = unsafe{
+                                        Image::from_raw(raylib::ffi::Image {
+                                            data: bytes.as_mut_ptr() as *mut c_void,
+                                            width: img_scaled.width() as i32,
+                                            height: img_scaled.height() as i32,
+                                            mipmaps: 1,
+                                            format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
+                                        })
+                                    };
+                                    
+                                    // not eliminating unwrap because do not want to mess with mem::forget
+                                    // should work fine anyway...
+                                    let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
+                                    std::mem::forget(rimg);
+                                    let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
+    
+                                    images.push((filename, img_scaled, texture));
+                                }
+                            }
                         }
-                        let mut bytes = img_scaled.as_rgb8().unwrap().as_raw().to_owned();
-                        
-                        let rimg = unsafe{
-                            Image::from_raw(raylib::ffi::Image {
-                                data: bytes.as_mut_ptr() as *mut c_void,
-                                width: img_scaled.width() as i32,
-                                height: img_scaled.height() as i32,
-                                mipmaps: 1,
-                                format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
-                            })
-                        };
-                        
-                        let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
-                        std::mem::forget(rimg);
-                        let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
-
-                        images.push((filename, img_scaled, texture));
                     }
 
                     if rl.is_key_pressed(KeyboardKey::KEY_DELETE) {
@@ -520,22 +527,26 @@ fn gui_app() {
                             } else {
                                 images[file_list_active as usize].1.rotate90()
                             };
-                            let mut bytes = rotated_image.as_rgb8().unwrap().as_raw().to_owned();
-                            
-                            let rimg = unsafe{
-                                Image::from_raw(raylib::ffi::Image {
-                                    data: bytes.as_mut_ptr() as *mut c_void,
-                                    width: rotated_image.width() as i32,
-                                    height: rotated_image.height() as i32,
-                                    mipmaps: 1,
-                                    format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
-                                })
-                            };
-                            
-                            let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
-                            std::mem::forget(rimg);
-                            images[file_list_active as usize].1 = rotated_image;
-                            images[file_list_active as usize].2 = texture;
+                            if let Some(bytes_) = rotated_image.as_rgb8() {
+                                let mut bytes = bytes_.as_raw().to_owned();
+                                
+                                let rimg = unsafe{
+                                    Image::from_raw(raylib::ffi::Image {
+                                        data: bytes.as_mut_ptr() as *mut c_void,
+                                        width: rotated_image.width() as i32,
+                                        height: rotated_image.height() as i32,
+                                        mipmaps: 1,
+                                        format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
+                                    })
+                                };
+                                
+                                // not eliminating unwrap because do not want to mess with mem::forget
+                                // should work fine anyway...
+                                let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
+                                std::mem::forget(rimg);
+                                images[file_list_active as usize].1 = rotated_image;
+                                images[file_list_active as usize].2 = texture;
+                            }
                         }
                     }
                 }
@@ -548,7 +559,7 @@ fn gui_app() {
                     
                     data = format!("{:02}{:02}{:02}",String::from_utf8(anno_buf.clone()).unwrap_or_default(), String::from_utf8(mese_buf.clone()).unwrap_or_default(), String::from_utf8(giorno_buf.clone()).unwrap_or_default());
 
-                    anno += String::from_utf8(anno_buf.clone()).unwrap_or_default().parse::<usize>().unwrap_or(0);
+                    anno = 2000 + String::from_utf8(anno_buf.clone()).unwrap_or_default().parse::<usize>().unwrap_or(0);
                     mese = String::from_utf8(mese_buf.clone()).unwrap_or_default().parse::<usize>().unwrap_or(0);
 
                     server = String::from_utf8(server_buf.clone()).unwrap_or_default();
@@ -561,8 +572,13 @@ fn gui_app() {
                 },
                 UploadStatus::CreatingDir => {
                     let _ = fs::remove_dir_all(image_dir.clone());
-                    fs::create_dir(image_dir.clone()).unwrap();
-                    upload_status = UploadStatus::SavingImage(0);
+                    upload_status = match fs::create_dir(image_dir.clone()) {
+                        Ok(_) => UploadStatus::SavingImage(0),
+                        Err(e) => {
+                            println!("[ERROR]: Impossibile creare la cartella `{}`: {}", image_dir, e);
+                            UploadStatus::Error(format!("Impossibile creare la cartella `{}`.", image_dir)) 
+                        },
+                    };
                 },
                 UploadStatus::SavingImage(i) => {
                     let new_name = format!("{}/{}_{}_{}_{:03}.JPG", image_dir, data, branca, titolo, i + 1);
@@ -577,7 +593,8 @@ fn gui_app() {
                                 UploadStatus::DoneSaving
                             }
                         },
-                        Err(_) => {
+                        Err(e) => {
+                            println!("[ERROR]: Impossibile salvare le immagini: {}", e);
                             UploadStatus::Error(String::from("Impossibile salvare le immagini"))
                         }
                     };
@@ -592,13 +609,15 @@ fn gui_app() {
                                     ftp_stream = Some(s); 
                                     UploadStatus::UploadingImage(0)
                                 },
-                                Err(_) => {
-                                    UploadStatus::Error(format!("Impossibile autenticarsi in '{}' (utente: {})", server, utente))
+                                Err(e) => {
+                                    println!("[ERROR]: Impossibile autenticarsi in `{}` (utente: {}): {}", server, utente, e);
+                                    UploadStatus::Error(format!("Impossibile autenticarsi in `{}` (utente: `{}`)", server, utente))
                                 }
                             }
                         },
-                        Err(_) => {
-                            UploadStatus::Error(format!("Impossibile connettersi a '{}'", server))
+                        Err(e) => {
+                            println!("[ERROR]: Impossibile connettersi a `{}`: {}", server, e);
+                            UploadStatus::Error(format!("Impossibile connettersi a `{}`", server))
                         }
                     };
                 },
@@ -606,29 +625,43 @@ fn gui_app() {
                     if let Some(stream) = &mut ftp_stream {
                         if i == 0 {
                             // println!("{:?}", stream.list(None).unwrap());
-                            if mese < 8 {
-                                let dir = format!("{}-{}", anno - 1, anno);
-                                stream.cwd(&dir).unwrap();
-                                println!("[FTP]: cd {}/", dir);
+                            let dir = if mese < 8 {
+                                format!("{}-{}", anno - 1, anno)
                             } else {
-                                let dir = format!("{}-{}", anno, anno + 1);
-                                stream.cwd(&dir).unwrap();
+                                format!("{}-{}", anno, anno + 1)
+                            };
+
+                            if let Err(e) = stream.cwd(&dir) {
+                                println!("[ERROR]: Sul server ftp `{}` non esiste la cartella `{}`: {}\nImpossibile caricare le immagini.", server, dir, e);
+                                upload_status = UploadStatus::Error(format!("Sul server ftp `{}` non esiste la cartella `{}`.\nImpossibile caricare le immagini.", server, dir));
+                            } else {
                                 println!("[FTP]: cd {}/", dir);
+                                if let Err(e) = stream.mkdir(&image_dir) {
+                                    println!("[ERROR]: Sul server ftp `{}` esiste già la cartella `{}`: {}\nImpossibile caricare le immagini.", server, image_dir, e);
+                                    upload_status = UploadStatus::Error(format!("Sul server ftp `{}` esiste già la cartella `{}`.\nImpossibile caricare le immagini.", server, image_dir));
+                                }
                             }
-                            stream.mkdir(&image_dir).unwrap();
+                            // IDK, FTP error... at this point let it just crash
                             stream.transfer_type(ftp::types::FileType::Image).unwrap();
                         }
                         
-                        let file = files_to_upload[i].clone();
-                        let content = fs::read(file.clone()).unwrap();
-                        let mut reader = Cursor::new(content);
-                        stream.put(&file.to_slash().unwrap(), &mut reader).unwrap();
+                        match upload_status {
+                            UploadStatus::Error(_) => {},
+                            UploadStatus::UploadingImage(i) => {
+                                let file = files_to_upload[i].clone();
+                                let content = fs::read(file.clone()).unwrap();
+                                let mut reader = Cursor::new(content);
+                                stream.put(&file.to_slash().unwrap(), &mut reader).unwrap();
 
-                        upload_status = UploadStatus::UploadingImage(i+1);
+                                upload_status = UploadStatus::UploadingImage(i+1);
 
-                        if i == files_to_upload.len() - 1 {
-                            let _ = stream.quit();
-                            upload_status = UploadStatus::Done;
+                                if i >= files_to_upload.len() - 1 {
+                                    // Don't care...
+                                    let _ = stream.quit();
+                                    upload_status = UploadStatus::Done;
+                                }
+                            },
+                            _ => {},
                         }
     
                     }
@@ -685,7 +718,7 @@ fn gui_app() {
 
                         let upload_button_width = (120f32).max(w as f32 / 12.0);
                         let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
-                        let upload_text = CString::new("upload").unwrap();
+                        let upload_text = CString::new("upload").unwrap_or_default();
                         let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
                         upload = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) && !input_not_given;
                         
@@ -793,13 +826,26 @@ fn gui_app() {
                     d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, i as f32, 0.0, (files_to_upload.len()-1) as f32);
                 },
                 UploadStatus::Error(ref e) => {
-                    let error_text_width = measure_text(e.as_str(), font_size*2);
-                    d.draw_text(e.as_str(), (w-error_text_width)/2, h*3/7, font_size*2, Color::RED);
+                    let error_text_width = measure_text(e.as_str(), font_size);
+                    d.draw_text(e.as_str(), (w-error_text_width)/2, h*3/7, font_size, Color::RED);
+
+                    let back_button_width = 500.0;
+                    let back_button_height = font_size as f32*2.0;
+                    let back_text = CString::new("Indietro").unwrap_or_default();
+                    if d.gui_button(Rectangle { x: (w as f32 - back_button_width) / 2.0, y: h as f32 * 3.0/7.0 + font_size as f32*3.0 + back_button_height/2.0, width: back_button_width, height: back_button_height }, Some(back_text.as_c_str())) {
+                        upload = false;
+                        upload_status = UploadStatus::None;
+                        app_tab = AppTab::InputData;
+                    }
                 },
                 UploadStatus::Done => {
                     let done_text = "Fatto!";
                     let done_text_width = measure_text(done_text, font_size*2);
                     d.draw_text(done_text, (w-done_text_width)/2, h*3/7, font_size*2, THEME_COLOR);
+
+                    let close_text = "adesso l'applicazione può essere chiusa";
+                    let close_text_width = measure_text(done_text, font_size);
+                    d.draw_text(close_text, (w-close_text_width)/2, h*3/7 + font_size*3, font_size, THEME_COLOR);
                 }
             };
 
