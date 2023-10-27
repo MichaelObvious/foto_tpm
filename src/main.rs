@@ -2,14 +2,15 @@ extern crate json;
 extern crate image;
 extern crate ftp;
 extern crate strum;
+extern crate path_slash;
 
 use ftp::FtpStream;
 use image::io::Reader as ImageReader;
 use image::{GenericImageView, DynamicImage};
+use path_slash::PathBufExt as _;
 use image::imageops::FilterType::Triangle;
 use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
-
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -621,7 +622,7 @@ fn gui_app() {
                         let file = files_to_upload[i].clone();
                         let content = fs::read(file.clone()).unwrap();
                         let mut reader = Cursor::new(content);
-                        stream.put(&file.to_str().unwrap(), &mut reader).unwrap();
+                        stream.put(&file.to_slash().unwrap(), &mut reader).unwrap();
 
                         upload_status = UploadStatus::UploadingImage(i+1);
 
@@ -631,21 +632,6 @@ fn gui_app() {
                         }
     
                     }
-                    //println!("+ Uploading DIR `{}`...", dir);
-                    // stream.mkdir(&dir).unwrap();
-                    // println!("+ [FTP]: mkdir {}", &dir);
-                    // // stream.cwd(dir).unwrap();
-                    // stream.transfer_type(ftp::types::FileType::Image).unwrap();
-                    // for file in find_files(dir) {
-                    //     print!("  - Uploading `{}`...", file.to_str().unwrap());
-                    //     io::stdout().flush().unwrap();
-
-                    //     let content = fs::read(file.clone()).unwrap();
-                    //     let mut reader = Cursor::new(content);
-
-                    //     stream.put(&file.to_str().unwrap(), &mut reader).unwrap();
-                    //     println!(" done!");
-                    // }
 
                 },
                 UploadStatus::Done => {},
