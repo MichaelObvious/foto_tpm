@@ -434,7 +434,7 @@ fn gui_app() {
                     y += step;
                     pw_rect     = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
 
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 16, titolo_rect);
+                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 32, titolo_rect);
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut branca_buf, 8, branca_rect);
                     gui::gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut giorno_buf, 2, giorno_rect);
                     gui::gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut mese_buf, 2, mese_rect);
@@ -854,7 +854,7 @@ fn gui_app() {
                     d.draw_text(done_text, (w-done_text_width)/2, h*3/7, font_size*2, THEME_COLOR);
 
                     let close_text = "adesso l'applicazione può essere chiusa";
-                    let close_text_width = measure_text(done_text, font_size);
+                    let close_text_width = measure_text(close_text, font_size);
                     d.draw_text(close_text, (w-close_text_width)/2, h*3/7 + font_size*3, font_size, THEME_COLOR);
                 }
             };
