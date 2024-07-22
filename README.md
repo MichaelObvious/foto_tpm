@@ -38,7 +38,7 @@ cargo run --release
     - Il nome utente per accedere al server;
     - La password per accedere al server;
     - La volontà di caricare le fotografie in risoluzione maggiore (o _"HD"_, 1200x1600 px) oppure no (600x800 px).
-2. Nella scheda `Foto` rilasciare le foto. _(Mentre vengono caricate, le foto vengono già ridimensionate e ritagliate automaticamente per essere della dimensione desiderata)_
+2. Nella scheda `Foto` rilasciare le foto. I formati supportati attualmente sono `JPEG` e `PNG`. _(Mentre vengono caricate, le foto vengono già ridimensionate e ritagliate automaticamente per essere della dimensione desiderata)_
 3. Riordinare le foto con le [scorciatoie da tastiera](#scheda-foto).
 4. Una volta terminato il riordino e la correzione, controllare la correttezza dei `Dati`.
 5. Nella scheda `Foto` premere il tasto `Upload`.
