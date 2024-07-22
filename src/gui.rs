@@ -203,3 +203,15 @@ pub fn gui_seecret_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_id
 //         // );}
 //     }
 // }
+
+pub fn draw_outlined_text(d: &mut RaylibDrawHandle, text: &str, x: i32, y: i32, font_size: i32, outline_size: i32, color: Color, outline_color: Color) {
+    d.draw_text(text, x - outline_size, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x - outline_size, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x - outline_size, y, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y, font_size, outline_color);
+    d.draw_text(text, x, y, font_size, color);
+}

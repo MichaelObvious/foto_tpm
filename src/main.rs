@@ -1,9 +1,12 @@
+extern crate chrono;
 extern crate json;
 extern crate image;
 extern crate ftp;
 extern crate strum;
 extern crate path_slash;
+extern crate walkdir;
 
+use chrono::Local;
 use ftp::FtpStream;
 use image::io::Reader as ImageReader;
 use image::{GenericImageView, DynamicImage};
@@ -13,6 +16,7 @@ use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use walkdir::WalkDir;
 
 use std::collections::VecDeque;
 use std::ffi::{CString, c_void};
@@ -22,6 +26,12 @@ use std::io::{Cursor, Write};
 use std::process::exit;
 
 mod gui;
+
+const SMALLER_DIMENSION: u32 = 600;
+const BIGGER_DIMENSION: u32 = 800;
+
+const HD_SMALLER_DIMENSION: u32 = 1200;
+const HD_BIGGER_DIMENSION: u32 = 1600;
 
 const THEME_COLOR: Color = Color::new(85, 138, 255, 255);
 const BACKGROUND_COLOR: Color = Color::new(0x18, 0x18, 0x18, 0xff);
@@ -105,7 +115,7 @@ fn find_images() -> Vec<PathBuf> {
     for element in std::path::Path::new(".").read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
-            if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
+            if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" || extension == "PNG" {
                 images.push(path);
             }
         }
@@ -116,20 +126,58 @@ fn find_images() -> Vec<PathBuf> {
     return images;
 }
 
-fn check_images_paths(files: &Vec<String>) -> Vec<PathBuf> {
-    let mut images = vec![];
-    for f in files {
-        let p = PathBuf::from(f);
-        if let Some(extension) = p.extension() {
-            if p.exists() {
-                if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
-                    images.push(p);
+fn check_single_image_path(p: PathBuf, images: &mut Vec<PathBuf>){
+    if let Some(extension) = p.clone().extension() {
+        if p.exists() {
+            if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
+                images.push(p);
+            } else if extension == "txt" {
+                let nps = fs::read_to_string(p)
+                    .unwrap()
+                    .lines()
+                    .map(String::from)
+                    .collect::<Vec<_>>();
+
+                for np in check_images_paths(&nps) {
+                    images.push(np);
                 }
             }
         }
     }
+}
+
+fn check_images_paths(files: &Vec<String>) -> Vec<PathBuf> {
+    let mut images = vec![];
+    for f in files {
+        let p = PathBuf::from(f);
+        if p.is_dir() {
+            let mut entries = WalkDir::new(p)
+                                            .into_iter()
+                                            .filter_map(|e| e.ok())
+                                            .map(|e| PathBuf::from(e.path()))
+                                            .collect::<Vec<_>>();
+            entries.sort();
+            for entry in entries {
+                let np = PathBuf::from(entry);
+                check_single_image_path(np, &mut images);
+            }
+        } else {
+            check_single_image_path(p, &mut images);
+        }
+        
+    }
 
     return images;
+}
+
+
+fn save_used_files(path: &str,  images: &Vec<ImgData>) -> io::Result<()> {
+    let mut f = fs::File::create(path)?;
+    for img in images.iter() {
+        writeln!(&mut f, "{}", img.path.display())?;
+    }
+
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -247,9 +295,9 @@ fn console_app() {
 
             let img_scaled;
             if size.0 > size.1 {
-                img_scaled = img.resize_to_fill(800, 600, Triangle);
+                img_scaled = img.resize_to_fill(BIGGER_DIMENSION, SMALLER_DIMENSION, Triangle);
             } else {
-                img_scaled = img.resize_to_fill(600, 800, Triangle);
+                img_scaled = img.resize_to_fill(SMALLER_DIMENSION, BIGGER_DIMENSION, Triangle);
             }
 
             let new_name = format!("{}/{}_{}_{}_{:03}.JPG", dir_path, data, branca, titolo, n + 1);
@@ -288,6 +336,23 @@ fn console_app() {
 
 }
 
+struct ImgData {
+    path: PathBuf,
+    filename: String,
+    image: DynamicImage,
+    texture: Texture2D,
+}
+
+impl ImgData {
+    pub fn new(path: PathBuf, filename: String, image: DynamicImage, texture: Texture2D) -> ImgData {
+        ImgData {
+            path,
+            filename,
+            image,
+            texture
+        }
+    }
+}
 
 #[derive(Debug, EnumIter, Eq, PartialEq, Copy, Clone)]
 enum AppTab {
@@ -320,7 +385,7 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
     let button_count = AppTab::iter().count() as f32;
     let button_width = (w/(button_count+2.0)).max(100.0);
     let button_height = (h/20.0).max(10.0);
-    let button_padding = (h/55.0).max(15.0);
+    let button_padding = (h/75.0).max(10.0);
     let start_x = w/2.0 - ((button_count * button_width + (button_count-1.0) * button_padding) as f32  * 0.5);
 
     for (i, e) in AppTab::iter().enumerate() {
@@ -360,7 +425,7 @@ fn gui_app() {
     let mut font_size = 0;
 
     let mut file_queue = VecDeque::new();
-    let mut images: Vec<(String, DynamicImage, Texture2D)> = Vec::new(); // path, pixels, texture
+    let mut images: Vec<ImgData> = Vec::new();
 
     let mut file_list_scroll_index = 0;
     let mut file_list_active: i32 = 0;
@@ -386,6 +451,7 @@ fn gui_app() {
     let mut server_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
     let mut utente_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
     let mut pw_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
+    let mut hd_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
 
     let mut text_box_active = -1;
 
@@ -397,6 +463,8 @@ fn gui_app() {
     let mut server = String::default();
     let mut utente = String::default();
     let mut password = String::default();
+
+    let mut hd_images = false;
 
     let mut image_dir = String::default();
 
@@ -418,8 +486,8 @@ fn gui_app() {
 
                     let mut idx = 0;
                     text_box_height = font_size as f32 * 2.5;
-                    let mut y = (h as f32 * 3.0 / 10.0).max(200.0);
-                    let step = (h as f32 - y) / 7.0;
+                    let mut y = (h as f32 * 3.0 / 11.0).max(200.0);
+                    let step = (h as f32 - y) / 8.0;
                     titolo_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
                     y += step;
                     branca_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
@@ -433,6 +501,9 @@ fn gui_app() {
                     utente_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
                     y += step;
                     pw_rect     = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+
+                    y += step;
+                    hd_rect     = Rectangle { x: (w as f32 - text_box_width)/2.0 + text_box_height*0.3, y: y + text_box_height*0.3, width: text_box_height * 0.4, height: text_box_height * 0.4 };
 
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 32, titolo_rect);
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut branca_buf, 8, branca_rect);
@@ -452,10 +523,14 @@ fn gui_app() {
                             if let Ok(img) = img_.decode() {
                                 let img_scaled;
                                 let size = img.dimensions();
+
+                                let small_dim = if hd_images { HD_SMALLER_DIMENSION } else { SMALLER_DIMENSION };
+                                let big_dim = if hd_images { HD_BIGGER_DIMENSION } else { BIGGER_DIMENSION };
+
                                 if size.0 > size.1 {
-                                    img_scaled = img.resize_to_fill(800, 600, Triangle);
+                                    img_scaled = img.resize_to_fill(big_dim, small_dim, Triangle);
                                 } else {
-                                    img_scaled = img.resize_to_fill(600, 800, Triangle);
+                                    img_scaled = img.resize_to_fill(small_dim, big_dim, Triangle);
                                 }
                                 if let Some(bytes_) = img_scaled.as_rgb8() {
                                     let mut bytes = bytes_.as_raw().to_owned();
@@ -476,7 +551,7 @@ fn gui_app() {
                                     std::mem::forget(rimg);
                                     let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
     
-                                    images.push((filename, img_scaled, texture));
+                                    images.push(ImgData::new(path, filename, img_scaled, texture));
                                 }
                             }
                         }
@@ -486,25 +561,16 @@ fn gui_app() {
                         images.remove(file_list_active as usize);
                     }
 
-                    if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
-                        if rl.is_key_pressed(KeyboardKey::KEY_UP) && file_list_active > 0 {
-                            images.swap(file_list_active as usize, file_list_active as usize-1);
-                            file_list_active -= 1;
-                            list_moved_by_key = true;
-                            
-                        }
-                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) && file_list_active < images.len() as i32-1 {
-                            images.swap(file_list_active as usize, file_list_active as usize+1);
-                            file_list_active += 1;
-                            list_moved_by_key = true;
-                        }
-                    } else if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
+                    let prev_file_list_active = file_list_active;
+
+                    let fast_step = (images.len() as f32 / 10.0).ceil() as i32;
+                    if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
                         if rl.is_key_pressed(KeyboardKey::KEY_UP) {
-                            file_list_active -= images.len() as i32/10;
+                            file_list_active -= fast_step;
                             list_moved_by_key = true;
                         }
                         if rl.is_key_pressed(KeyboardKey::KEY_DOWN) {
-                            file_list_active += images.len() as i32/10;
+                            file_list_active += fast_step;
                             list_moved_by_key = true;
                         }
                     } else {
@@ -520,12 +586,22 @@ fn gui_app() {
 
                     file_list_active = file_list_active.min(images.len() as i32 - 1).max(0);
 
+                    if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
+                        if (file_list_active - prev_file_list_active).abs() <= 1 {
+                            images.swap(prev_file_list_active as usize, file_list_active as usize);
+                        } else {
+                            let img_to_move = images.remove(prev_file_list_active as usize);
+                            images.insert(file_list_active as usize, img_to_move);
+                        }
+                    }
+
+
                     if rl.is_key_pressed(KeyboardKey::KEY_R) {
                         if file_list_active >= 0 && !images.is_empty() {
                             let rotated_image = if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
-                                images[file_list_active as usize].1.rotate270()
+                                images[file_list_active as usize].image.rotate270()
                             } else {
-                                images[file_list_active as usize].1.rotate90()
+                                images[file_list_active as usize].image.rotate90()
                             };
                             if let Some(bytes_) = rotated_image.as_rgb8() {
                                 let mut bytes = bytes_.as_raw().to_owned();
@@ -544,8 +620,8 @@ fn gui_app() {
                                 // should work fine anyway...
                                 let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
                                 std::mem::forget(rimg);
-                                images[file_list_active as usize].1 = rotated_image;
-                                images[file_list_active as usize].2 = texture;
+                                images[file_list_active as usize].image = rotated_image;
+                                images[file_list_active as usize].texture = texture;
                             }
                         }
                     }
@@ -567,7 +643,7 @@ fn gui_app() {
                     password = String::from_utf8(pw_buf.clone()).unwrap_or_default();
 
                     image_dir = format!("{}_{}_{}", data, branca, titolo);
-                    println!("{}", image_dir);
+                    // println!("{}", image_dir);
                     upload_status = UploadStatus::CreatingDir;
                 },
                 UploadStatus::CreatingDir => {
@@ -575,7 +651,7 @@ fn gui_app() {
                     upload_status = match fs::create_dir(image_dir.clone()) {
                         Ok(_) => UploadStatus::SavingImage(0),
                         Err(e) => {
-                            println!("[ERROR]: Impossibile creare la cartella `{}`: {}", image_dir, e);
+                            eprintln!("[ERROR]: Impossibile creare la cartella `{}`: {}", image_dir, e);
                             UploadStatus::Error(format!("Impossibile creare la cartella `{}`.", image_dir)) 
                         },
                     };
@@ -583,7 +659,7 @@ fn gui_app() {
                 UploadStatus::SavingImage(i) => {
                     let new_name = format!("{}/{}_{}_{}_{:03}.JPG", image_dir, data, branca, titolo, i + 1);
 
-                    upload_status = match images[i].1.save(new_name) {
+                    upload_status = match images[i].image.save(new_name) {
                         Ok(_) => {
                             if i+1 < images.len() {
                                  UploadStatus::SavingImage(i+1)
@@ -594,7 +670,7 @@ fn gui_app() {
                             }
                         },
                         Err(e) => {
-                            println!("[ERROR]: Impossibile salvare le immagini: {}", e);
+                            eprintln!("[ERROR]: Impossibile salvare le immagini: {}", e);
                             UploadStatus::Error(String::from("Impossibile salvare le immagini"))
                         }
                     };
@@ -610,13 +686,13 @@ fn gui_app() {
                                     UploadStatus::UploadingImage(0)
                                 },
                                 Err(e) => {
-                                    println!("[ERROR]: Impossibile autenticarsi in `{}` (utente: {}): {}", server, utente, e);
+                                    eprintln!("[ERROR]: Impossibile autenticarsi in `{}` (utente: {}): {}", server, utente, e);
                                     UploadStatus::Error(format!("Impossibile autenticarsi in `{}` (utente: `{}`)", server, utente))
                                 }
                             }
                         },
                         Err(e) => {
-                            println!("[ERROR]: Impossibile connettersi a `{}`: {}", server, e);
+                            eprintln!("[ERROR]: Impossibile connettersi a `{}`: {}", server, e);
                             UploadStatus::Error(format!("Impossibile connettersi a `{}`", server))
                         }
                     };
@@ -632,12 +708,12 @@ fn gui_app() {
                             };
 
                             if let Err(e) = stream.cwd(&dir) {
-                                println!("[ERROR]: Sul server ftp `{}` non esiste la cartella `{}`: {}\nImpossibile caricare le immagini.", server, dir, e);
+                                eprintln!("[ERROR]: Sul server ftp `{}` non esiste la cartella `{}`: {}\nImpossibile caricare le immagini.", server, dir, e);
                                 upload_status = UploadStatus::Error(format!("Sul server ftp `{}` non esiste la cartella `{}`.\nImpossibile caricare le immagini.", server, dir));
                             } else {
                                 println!("[FTP]: cd {}/", dir);
                                 if let Err(e) = stream.mkdir(&image_dir) {
-                                    println!("[ERROR]: Sul server ftp `{}` esiste già la cartella `{}`: {}\nImpossibile caricare le immagini.", server, image_dir, e);
+                                    eprintln!("[ERROR]: Sul server ftp `{}` esiste già la cartella `{}`: {}\nImpossibile caricare le immagini.", server, image_dir, e);
                                     upload_status = UploadStatus::Error(format!("Sul server ftp `{}` esiste già la cartella `{}`.\nImpossibile caricare le immagini.", server, image_dir));
                                 }
                             }
@@ -680,6 +756,8 @@ fn gui_app() {
         // d.gui_set_style(GuiControl::DEFAULT, GuiControlProperty::BASE_COLOR_PRESSED as i32, GUI_PRESSED_COLOR.color_to_int());
         d.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::TEXT_SIZE as i32, font_size);
         d.gui_set_style(GuiControl::DEFAULT, GuiDefaultProperty::BACKGROUND_COLOR as i32, BACKGROUND_COLOR.color_to_int());
+        let item_height = ((h * 4 / 5) - d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32) * 7) / 7;
+        d.gui_set_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32, item_height);
 
         d.clear_background(BACKGROUND_COLOR);
 
@@ -700,6 +778,19 @@ fn gui_app() {
                     gui::gui_text_input(&mut d, &mut idx, text_box_active, "Server", &mut server_buf, font_size, server_rect);
                     gui::gui_text_input(&mut d, &mut idx, text_box_active, "Utente", &mut utente_buf, font_size, utente_rect);
                     gui::gui_seecret_text_input(&mut d, &mut idx, text_box_active, "Password", &mut pw_buf, font_size, pw_rect);
+
+                    // let hd_text = CString::new("HD (prima di caricare le foto)").unwrap();
+
+                    hd_images = d.gui_check_box(hd_rect, None, hd_images);
+
+                    let hd_color = if hd_images { Color::WHITE } else { Color::GRAY };
+
+                    let hd_text = "HD ";
+                    let hd_text_size = measure_text(&hd_text, font_size);
+
+                    d.draw_text(hd_text, (hd_rect.x + hd_rect.width * 2.0) as i32, (hd_rect.y + hd_rect.height) as i32 - font_size, font_size, hd_color);
+                    let small_font_size = font_size * 3 / 4;
+                    d.draw_text("(premere prima di importare le foto)", (hd_rect.x + hd_rect.width * 2.0) as i32 + hd_text_size, (hd_rect.y + hd_rect.height) as i32 - small_font_size, small_font_size, hd_color);
                 },
                 AppTab::SelectionLab => {
                     if images.is_empty() {
@@ -709,13 +800,13 @@ fn gui_app() {
                         let drop_text_width = measure_text(drop_text, font_size*2);
                         d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                     } else {
-                        let img_w = images[file_list_active as usize].1.width() as f32;
-                        let img_h = images[file_list_active as usize].1.height() as f32;
+                        let img_w = images[file_list_active as usize].image.width() as f32;
+                        let img_h = images[file_list_active as usize].image.height() as f32;
                         let scale_x = (w as f32 * 4.0/5.0)/img_w;
-                        let scale_y = (h as f32 * 3.0/4.0)/img_h;
+                        let scale_y = (h as f32 * 4.0/5.0)/img_h;
                         let scale = scale_x.min(scale_y);
 
-                        d.draw_texture_ex(&images[file_list_active as usize].2, Vector2 {x: ((1+2)*w) as f32/5.0 - (img_w * scale) / 2.0, y: (h as f32 / 4.0).max(167.0)}, 0.0, scale, Color::WHITE);
+                        d.draw_texture_ex(&images[file_list_active as usize].texture, Vector2 {x: w as f32 * (2.0 + 3.0) / 8.0 - (img_w * scale) / 2.0, y: (h as f32 / 5.0).max(167.0)}, 0.0, scale, Color::WHITE);
 
                         draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
 
@@ -735,18 +826,26 @@ fn gui_app() {
                         if !file_queue.is_empty() {
                             let load_text = format!("Caricando {} foto...", file_queue.len());
                             let load_text_width = measure_text(load_text.as_str(), font_size);
-                            d.draw_text(load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, Color::WHITE);
+                            gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
+                        } else {
+                            let load_text = format!("{}/{}", file_list_active+1, images.len());
+                            let load_text_width = measure_text(load_text.as_str(), font_size);
+                            gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
                         }
 
                         let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
+                        let max_viewable_index_offset = (h * 4 / 5) / item_height;
                         if list_moved_by_key {
-                            let max_viewable_index = file_list_scroll_index + (h * 3 / 4) / item_height;
-                            file_list_scroll_index += (file_list_active - max_viewable_index + 1).max(0) - (file_list_scroll_index - file_list_active).max(0);
-                            file_list_scroll_index = file_list_scroll_index.clamp(0, (images.len() as i32 -max_viewable_index-1).max(0));
+                            while file_list_scroll_index + max_viewable_index_offset <= file_list_active && file_list_scroll_index < images.len() as i32 {
+                                file_list_scroll_index += 1;
+                            }
+                            while file_list_scroll_index > file_list_active && file_list_scroll_index > 0 {
+                                file_list_scroll_index -= 1;
+                            }
                             list_moved_by_key = false;
                         }
 
-                        let list_rect = Rectangle { x:0.0, y:(h as f32 / 4.0).max(167.0), width: w as f32/5.0, height: (h as f32 * 3.0 / 4.0).min(h as f32-167.0)};
+                        let list_rect = Rectangle { x:0.0, y:(h as f32 / 5.0).max(167.0), width: w as f32/6.0, height: (h as f32 * 4.0 / 5.0).min(h as f32-167.0)};
 
                         if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
                             let mouse_in_boundaries = unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), list_rect.into())};
@@ -758,11 +857,49 @@ fn gui_app() {
                             }
                         }
 
-                        let list_text = images.iter().map(|a| a.0.clone()).collect::<Vec<_>>().join("\n");
+                        let list_text = images.iter()
+                            .skip(file_list_scroll_index as usize).take(max_viewable_index_offset as usize)
+                            .map(|a| a.filename.clone()).collect::<Vec<_>>().join("\n");
                         let list_cstr_text = CString::new(list_text).unwrap_or_default();
                         // let list_cstr = CString::new(list_text).unwrap_or_default();
                         
-                        d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut file_list_scroll_index, file_list_active);
+                        let mut scroll_idx = 0;
+                        let preview_width = w / 4;
+                        d.draw_rectangle(list_rect.x as i32, list_rect.y as i32, preview_width, list_rect.height as i32, Color::GRAY);
+                        d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut scroll_idx, file_list_active - file_list_scroll_index);
+                        // println!("active: {} | scroll: {}",file_list_active,file_list_scroll_index);
+
+                        
+                        for (i, img) in images.iter().skip(file_list_scroll_index as usize).take(max_viewable_index_offset as usize).enumerate() {
+                            let max_w = preview_width as f32 - list_rect.width;
+                            let max_h = item_height as f32;
+                            let img_w = img.image.width() as f32;
+                            let img_h = img.image.height() as f32;
+                            let scale_x = max_w /img_w;
+                            let scale_y = max_h /img_h;
+                            let mut scale = scale_x.min(scale_y);
+
+                            let mut y = (h as f32 / 5.0).max(167.0) + i as f32 * item_height as f32;
+                            let mut x = list_rect.width;
+
+                            let mut color_fade = 1.0;
+                            
+                            if i as i32 != file_list_active - file_list_scroll_index {
+                                scale *= 0.85;
+                                color_fade *= 0.9;
+                            }
+
+                            y += (max_h - img_h * scale) / 2.0;
+                            x += (max_w - img_w * scale) / 2.0;
+                            
+                            d.draw_texture_ex(&img.texture, Vector2 {x: x, y: y}, 0.0, scale, Color::WHITE);
+                            
+                            let num_text = format!("{}", i+file_list_scroll_index as usize);
+                            gui::draw_outlined_text(&mut d, &num_text, x as i32, y as i32, font_size, 2, Color::WHITE.fade(color_fade), Color::BLACK.fade(color_fade/2.0));
+                        }
+                        
+                        file_list_scroll_index += scroll_idx;
+                        
                     }
                 }
             };
@@ -771,7 +908,7 @@ fn gui_app() {
                 UploadStatus::None => {},
                 UploadStatus::CreatingDir => {
                     let upload_text = "Creazione della cartella";
-                    let upload_label_text = format!("{}{}{}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
+                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
                         // 0 => "Uploading",
                         0 => ".",
                         1 => "..",
@@ -784,7 +921,7 @@ fn gui_app() {
                 },
                 UploadStatus::SavingImage(i) => {
                     let upload_text = "Salvando le immagini in";
-                    let upload_label_text = format!("{} {} {}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
+                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
                         // 0 => "Uploading",
                         0 => ".",
                         1 => "..",
@@ -799,16 +936,16 @@ fn gui_app() {
                     d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, i as f32, 0.0, (images.len()-1) as f32);
                 },
                 UploadStatus::DoneSaving => {
-                    let upload_button_width = 500.0;
+                    let upload_button_width = 550.0;
                     let upload_button_height = font_size as f32*2.0;
-                    let upload_text = CString::new("Caricare le foto").unwrap_or_default();
+                    let upload_text = CString::new(format!("Caricare le foto sul server")).unwrap_or_default();
                     if d.gui_button(Rectangle { x: (w as f32 - upload_button_width) / 2.0, y: (h as f32 - upload_button_height)/2.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) {
                         upload_status = UploadStatus::Connecting;
                     }
                 },
                 UploadStatus::Connecting => {
                     let upload_text = "Connessione a";
-                    let upload_label_text = format!("{}{}{}", upload_text, server, match (d.get_time() as u32) % 3 {
+                    let upload_label_text = format!("{} `{}`{}", upload_text, server, match (d.get_time() as u32) % 3 {
                         // 0 => "Uploading",
                         0 => ".",
                         1 => "..",
@@ -862,6 +999,9 @@ fn gui_app() {
             
         }
     }
+
+    let date = Local::now();
+    let _ = save_used_files(&format!("fototpm-imglist_{}.txt", date.format("%Y-%m-%d %H:%M:%S")), &images);
 }
 
 
