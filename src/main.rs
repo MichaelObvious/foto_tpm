@@ -322,7 +322,7 @@ fn gui_app() {
                                     std::mem::forget(rimg);
                                     let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
     
-                                    images.push(ImgData::new(path, filename, img_scaled, texture));
+                                    images.push(ImgData::new(path.canonicalize().unwrap_or(path), filename, img_scaled, texture));
                                 }
                             }
                         }
