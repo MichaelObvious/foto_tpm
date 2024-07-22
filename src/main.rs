@@ -132,10 +132,8 @@ fn check_single_image_path(p: PathBuf, images: &mut Vec<PathBuf>){
             if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
                 images.push(p);
             } else if extension == "txt" {
-                let nps = fs::read_to_string(p)
-                    .unwrap()
-                    .lines()
-                    .map(String::from)
+                let content = fs::read_to_string(p).unwrap();
+                let nps = content.lines()
                     .collect::<Vec<_>>();
 
                 for np in check_images_paths(&nps) {
@@ -146,7 +144,7 @@ fn check_single_image_path(p: PathBuf, images: &mut Vec<PathBuf>){
     }
 }
 
-fn check_images_paths(files: &Vec<String>) -> Vec<PathBuf> {
+fn check_images_paths(files: &Vec<&str>) -> Vec<PathBuf> {
     let mut images = vec![];
     for f in files {
         let p = PathBuf::from(f);
@@ -254,7 +252,7 @@ fn console_app() {
     let dir_path = format!("{}_{}_{}", data, branca, titolo);
 
     let mut images = if let Ok(files) = get_array_of_strings(&settings, "files") {
-        check_images_paths(&files)
+        check_images_paths(&files.iter().map(|x| x.as_str()).collect())
     } else {
         Vec::new()
     };
@@ -392,9 +390,9 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
         let i = i as f32;
         let rect = Rectangle {x: start_x + (button_width+button_padding)*i, y: font_size as f32 + button_padding * 7.5, width: button_width, height:button_height};
         let label = format!("{}", e);
-        let label_width = measure_text(label.as_str(), font_size);
-
-        if d.gui_check_box(rect, None, e == *active_tab) {
+        let label_width = d.measure_text(label.as_str(), font_size);
+        
+        if d.gui_check_box(rect, None, &mut (e == *active_tab)) {
             *active_tab = e;
         }       
         d.draw_text(label.as_str(),
@@ -515,7 +513,7 @@ fn gui_app() {
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut pw_buf, 32, pw_rect);
                 },
                 AppTab::SelectionLab => {
-                    let new_files = check_images_paths(&rl.load_dropped_files());
+                    let new_files = check_images_paths(&rl.load_dropped_files().paths());
                     file_queue.append(&mut new_files.into());
 
                     if let Some(path) = file_queue.pop_front() {
@@ -763,7 +761,7 @@ fn gui_app() {
 
         // RENDERING
         let title = "FOTO TPM";
-        let title_width = measure_text(title, font_size * 3);
+        let title_width = d.measure_text(title, font_size * 3);
         d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
         if !upload {
             match app_tab {
@@ -781,12 +779,12 @@ fn gui_app() {
 
                     // let hd_text = CString::new("HD (prima di caricare le foto)").unwrap();
 
-                    hd_images = d.gui_check_box(hd_rect, None, hd_images);
+                    d.gui_check_box(hd_rect, None, &mut hd_images);
 
                     let hd_color = if hd_images { Color::WHITE } else { Color::GRAY };
 
                     let hd_text = "HD ";
-                    let hd_text_size = measure_text(&hd_text, font_size);
+                    let hd_text_size = d.measure_text(&hd_text, font_size);
 
                     d.draw_text(hd_text, (hd_rect.x + hd_rect.width * 2.0) as i32, (hd_rect.y + hd_rect.height) as i32 - font_size, font_size, hd_color);
                     let small_font_size = font_size * 3 / 4;
@@ -797,7 +795,7 @@ fn gui_app() {
                         draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
 
                         let drop_text = "Rilasci le foto";
-                        let drop_text_width = measure_text(drop_text, font_size*2);
+                        let drop_text_width = d.measure_text(drop_text, font_size*2);
                         d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                     } else {
                         let img_w = images[file_list_active as usize].image.width() as f32;
@@ -825,11 +823,11 @@ fn gui_app() {
                         
                         if !file_queue.is_empty() {
                             let load_text = format!("Caricando {} foto...", file_queue.len());
-                            let load_text_width = measure_text(load_text.as_str(), font_size);
+                            let load_text_width = d.measure_text(load_text.as_str(), font_size);
                             gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
                         } else {
                             let load_text = format!("{}/{}", file_list_active+1, images.len());
-                            let load_text_width = measure_text(load_text.as_str(), font_size);
+                            let load_text_width = d.measure_text(load_text.as_str(), font_size);
                             gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
                         }
 
@@ -866,7 +864,9 @@ fn gui_app() {
                         let mut scroll_idx = 0;
                         let preview_width = w / 4;
                         d.draw_rectangle(list_rect.x as i32, list_rect.y as i32, preview_width, list_rect.height as i32, Color::GRAY);
-                        d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut scroll_idx, file_list_active - file_list_scroll_index);
+                        let mut idx = file_list_active - file_list_scroll_index;
+                        d.gui_list_view(list_rect, Some(list_cstr_text.as_c_str()), &mut scroll_idx, &mut idx);
+                        file_list_active = file_list_scroll_index + idx;
                         // println!("active: {} | scroll: {}",file_list_active,file_list_scroll_index);
 
                         
@@ -895,7 +895,7 @@ fn gui_app() {
                             d.draw_texture_ex(&img.texture, Vector2 {x: x, y: y}, 0.0, scale, Color::WHITE);
                             
                             let num_text = format!("{}", i+file_list_scroll_index as usize);
-                            gui::draw_outlined_text(&mut d, &num_text, x as i32, y as i32, font_size, 2, Color::WHITE.fade(color_fade), Color::BLACK.fade(color_fade/2.0));
+                            gui::draw_outlined_text(&mut d, &num_text, x as i32, y as i32, font_size, 2, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
                         }
                         
                         file_list_scroll_index += scroll_idx;
@@ -915,7 +915,7 @@ fn gui_app() {
                         2 => "...",
                         _ => unreachable!()
                     });
-                    let upload_text_width = measure_text(upload_label_text.as_str(), font_size*2);
+                    let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
                     
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                 },
@@ -928,12 +928,12 @@ fn gui_app() {
                         2 => "...",
                         _ => unreachable!()
                     });
-                    let upload_text_width = measure_text(upload_label_text.as_str(), font_size*2);
+                    let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
                     
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
 
                     let progress_bar_width = w as f32 / 3.0;
-                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, i as f32, 0.0, (images.len()-1) as f32);
+                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, &mut (i as f32), 0.0, (images.len()-1) as f32);
                 },
                 UploadStatus::DoneSaving => {
                     let upload_button_width = 550.0;
@@ -952,7 +952,7 @@ fn gui_app() {
                         2 => "...",
                         _ => unreachable!()
                     });
-                    let upload_text_width = measure_text(upload_label_text.as_str(), font_size*2);
+                    let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
                     
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                 },
@@ -965,15 +965,15 @@ fn gui_app() {
                         2 => "...",
                         _ => unreachable!()
                     });
-                    let upload_text_width = measure_text(upload_text, font_size*2);
+                    let upload_text_width = d.measure_text(upload_text, font_size*2);
                     
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
 
                     let progress_bar_width = w as f32 / 3.0;
-                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, i as f32, 0.0, (files_to_upload.len()-1) as f32);
+                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, &mut (i as f32), 0.0, (files_to_upload.len()-1) as f32);
                 },
                 UploadStatus::Error(ref e) => {
-                    let error_text_width = measure_text(e.as_str(), font_size);
+                    let error_text_width = d.measure_text(e.as_str(), font_size);
                     d.draw_text(e.as_str(), (w-error_text_width)/2, h*3/7, font_size, Color::RED);
 
                     let back_button_width = 500.0;
@@ -987,11 +987,11 @@ fn gui_app() {
                 },
                 UploadStatus::Done => {
                     let done_text = "Fatto!";
-                    let done_text_width = measure_text(done_text, font_size*2);
+                    let done_text_width = d.measure_text(done_text, font_size*2);
                     d.draw_text(done_text, (w-done_text_width)/2, h*3/7, font_size*2, THEME_COLOR);
 
                     let close_text = "adesso l'applicazione può essere chiusa";
-                    let close_text_width = measure_text(close_text, font_size);
+                    let close_text_width = d.measure_text(close_text, font_size);
                     d.draw_text(close_text, (w-close_text_width)/2, h*3/7 + font_size*3, font_size, THEME_COLOR);
                 }
             };

@@ -15,8 +15,4 @@ strum_macros = "0.25"
 path-slash = "0.2"
 chrono = "0.4"
 walkdir = "2.5"
-
-[dependencies.raylib]
-version = "4.5.0"
-git = "https://github.com/litten2up/raylib-rs"
-branch = "4.5.0"
+raylib = { version = "5.0" }
