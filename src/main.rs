@@ -161,7 +161,7 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
 
     for (i, e) in AppTab::iter().enumerate() {
         let i = i as f32;
-        let rect = Rectangle {x: start_x + (button_width+button_padding)*i, y: font_size as f32 + button_padding * 7.5, width: button_width, height:button_height};
+        let rect = rrect(start_x + (button_width+button_padding)*i, font_size as f32 + button_padding * 7.5, button_width, button_height);
         let label = format!("{}", e);
         let label_width = d.measure_text(label.as_str(), font_size);
         
@@ -214,15 +214,15 @@ fn gui_app() {
     let text_box_width = 500.0;
     let mut text_box_height;
 
-    let mut titolo_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut branca_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut giorno_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut mese_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut anno_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut server_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut utente_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut pw_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
-    let mut hd_rect = Rectangle { x: 0.0, y: 0.0, width: 0.0, height: 0. };
+    let mut titolo_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut branca_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut giorno_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut mese_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut anno_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut server_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut utente_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut pw_rect = rrect(0.0, 0.0, 0.0, 0. );
+    let mut hd_rect = rrect(0.0, 0.0, 0.0, 0. );
 
     let mut text_box_active = -1;
 
@@ -259,22 +259,22 @@ fn gui_app() {
                     text_box_height = font_size as f32 * 2.5;
                     let mut y = (h as f32 * 3.0 / 11.0).max(200.0);
                     let step = (h as f32 - y) / 8.0;
-                    titolo_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+                    titolo_rect = rrect((w as f32 - text_box_width)/2.0, y, text_box_width, text_box_height);
                     y += step;
-                    branca_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+                    branca_rect = rrect((w as f32 - text_box_width)/2.0, y, text_box_width, text_box_height );
                     y += step;
-                    giorno_rect = Rectangle { x: (w as f32 - text_box_width * 4.0/4.0)/2.0, y: y, width: text_box_width/4.0, height: text_box_height };
-                    mese_rect   = Rectangle { x: (w as f32 - text_box_width/4.0)/2.0, y: y, width: text_box_width/4.0, height: text_box_height };
-                    anno_rect   = Rectangle { x: (w as f32 - text_box_width*-2.0/4.0)/2.0, y: y, width: text_box_width/4.0, height: text_box_height };
+                    giorno_rect = rrect((w as f32 - text_box_width * 4.0/4.0)/2.0, y, text_box_width/4.0, text_box_height );
+                    mese_rect   = rrect((w as f32 - text_box_width/4.0)/2.0, y, text_box_width/4.0, text_box_height );
+                    anno_rect   = rrect((w as f32 - text_box_width*-2.0/4.0)/2.0, y, text_box_width/4.0, text_box_height );
                     y += step;
-                    server_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+                    server_rect = rrect((w as f32 - text_box_width)/2.0, y, text_box_width, text_box_height );
                     y += step;
-                    utente_rect = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+                    utente_rect = rrect((w as f32 - text_box_width)/2.0, y, text_box_width, text_box_height );
                     y += step;
-                    pw_rect     = Rectangle { x: (w as f32 - text_box_width)/2.0, y: y, width: text_box_width, height: text_box_height };
+                    pw_rect     = rrect((w as f32 - text_box_width)/2.0, y, text_box_width, text_box_height );
 
                     y += step;
-                    hd_rect     = Rectangle { x: (w as f32 - text_box_width)/2.0 + text_box_height*0.3, y: y + text_box_height*0.3, width: text_box_height * 0.4, height: text_box_height * 0.4 };
+                    hd_rect     = rrect((w as f32 - text_box_width)/2.0 + text_box_height*0.3, y + text_box_height*0.3, text_box_height * 0.4, text_box_height * 0.4 );
 
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 32, titolo_rect);
                     gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut branca_buf, 8, branca_rect);
@@ -577,7 +577,7 @@ fn gui_app() {
                         let scale_y = (h as f32 * 4.0/5.0)/img_h;
                         let scale = scale_x.min(scale_y);
 
-                        d.draw_texture_ex(&images[file_list_active as usize].texture, Vector2 {x: w as f32 * (2.0 + 3.0) / 8.0 - (img_w * scale) / 2.0, y: (h as f32 / 5.0).max(167.0)}, 0.0, scale, Color::WHITE);
+                        d.draw_texture_ex(&images[file_list_active as usize].texture, rvec2( w as f32 * (2.0 + 3.0) / 8.0 - (img_w * scale) / 2.0, (h as f32 / 5.0).max(167.0)), 0.0, scale, Color::WHITE);
 
                         draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
 
@@ -585,7 +585,7 @@ fn gui_app() {
                         let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
                         let upload_text = CString::new("upload").unwrap_or_default();
                         let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
-                        let upload_pressed = d.gui_button(Rectangle { x: w as f32 - upload_button_width - 25.0, y: h as f32 - upload_button_height - 25.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str()));
+                        let upload_pressed = d.gui_button(rrect(w as f32 - upload_button_width - 25.0, h as f32 - upload_button_height - 25.0, upload_button_width, upload_button_height ), Some(upload_text.as_c_str()));
 
                         if upload_pressed {
                             upload = true;
@@ -601,7 +601,7 @@ fn gui_app() {
                         } else {
                             let load_text = format!("{}/{}", file_list_active+1, images.len());
                             let load_text_width = d.measure_text(load_text.as_str(), font_size);
-                            gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
+                            gui::draw_outlined_text(&mut d, load_text.as_str(), w*5/8 - load_text_width/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
                         }
 
                         let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
@@ -616,7 +616,7 @@ fn gui_app() {
                             list_moved_by_key = false;
                         }
 
-                        let list_rect = Rectangle { x:0.0, y:(h as f32 / 5.0).max(167.0), width: w as f32/6.0, height: (h as f32 * 4.0 / 5.0).min(h as f32-167.0)};
+                        let list_rect = rrect(0.0, (h as f32 / 5.0).max(167.0), w as f32/6.0, (h as f32 * 4.0 / 5.0).min(h as f32-167.0));
 
                         if d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
                             let mouse_in_boundaries = unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), list_rect.into())};
@@ -665,10 +665,11 @@ fn gui_app() {
                             y += (max_h - img_h * scale) / 2.0;
                             x += (max_w - img_w * scale) / 2.0;
                             
-                            d.draw_texture_ex(&img.texture, Vector2 {x: x, y: y}, 0.0, scale, Color::WHITE);
+                            d.draw_texture_ex(&img.texture, rvec2(x, y), 0.0, scale, Color::WHITE);
                             
                             let num_text = format!("{}", i+file_list_scroll_index as usize);
-                            gui::draw_outlined_text(&mut d, &num_text, x as i32, y as i32, font_size, 2, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
+                            let outline_size = 2;
+                            gui::draw_outlined_text(&mut d, &num_text, x as i32 + outline_size * 2, y as i32 + outline_size + 1, font_size, outline_size, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
                         }
                         
                         file_list_scroll_index += scroll_idx;
@@ -706,13 +707,13 @@ fn gui_app() {
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
 
                     let progress_bar_width = w as f32 / 3.0;
-                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, &mut (i as f32), 0.0, (images.len()-1) as f32);
+                    d.gui_progress_bar(rrect((w as f32 - progress_bar_width) / 2.0, h as f32 * 0.5, progress_bar_width, 25.0), None, None, &mut (i as f32), 0.0, (images.len()-1) as f32);
                 },
                 UploadStatus::DoneSaving => {
                     let upload_button_width = 550.0;
                     let upload_button_height = font_size as f32*2.0;
                     let upload_text = CString::new(format!("Caricare le foto sul server")).unwrap_or_default();
-                    if d.gui_button(Rectangle { x: (w as f32 - upload_button_width) / 2.0, y: (h as f32 - upload_button_height)/2.0, width: upload_button_width, height: upload_button_height }, Some(upload_text.as_c_str())) {
+                    if d.gui_button(rrect((w as f32 - upload_button_width) / 2.0, (h as f32 - upload_button_height)/2.0, upload_button_width, upload_button_height ), Some(upload_text.as_c_str())) {
                         upload_status = UploadStatus::Connecting;
                     }
                 },
@@ -743,7 +744,7 @@ fn gui_app() {
                     d.draw_text(upload_label_text.as_str(), (w-upload_text_width)/2, h*3/7, font_size*2, Color::WHITE);
 
                     let progress_bar_width = w as f32 / 3.0;
-                    d.gui_progress_bar(Rectangle {x: (w as f32 - progress_bar_width) / 2.0, y: h as f32 * 0.5, width: progress_bar_width, height: 25.0}, None, None, &mut (i as f32), 0.0, (files_to_upload.len()-1) as f32);
+                    d.gui_progress_bar(rrect((w as f32 - progress_bar_width) / 2.0, h as f32 * 0.5, progress_bar_width, 25.0), None, None, &mut (i as f32), 0.0, (files_to_upload.len()-1) as f32);
                 },
                 UploadStatus::Error(ref e) => {
                     let error_text_width = d.measure_text(e.as_str(), font_size);
@@ -752,7 +753,7 @@ fn gui_app() {
                     let back_button_width = 500.0;
                     let back_button_height = font_size as f32*2.0;
                     let back_text = CString::new("Indietro").unwrap_or_default();
-                    if d.gui_button(Rectangle { x: (w as f32 - back_button_width) / 2.0, y: h as f32 * 3.0/7.0 + font_size as f32*3.0 + back_button_height/2.0, width: back_button_width, height: back_button_height }, Some(back_text.as_c_str())) {
+                    if d.gui_button(rrect((w as f32 - back_button_width) / 2.0, h as f32 * 3.0/7.0 + font_size as f32*3.0 + back_button_height/2.0, back_button_width, back_button_height ), Some(back_text.as_c_str())) {
                         upload = false;
                         upload_status = UploadStatus::None;
                         app_tab = AppTab::InputData;
