@@ -797,7 +797,8 @@ fn gui_app() {
 
             
         }
-        d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
+        // d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
+        gui::draw_outlined_text(&mut d, title, (w-title_width)/2, 25, font_size*3, font_size/10, THEME_COLOR, THEME_COLOR);
     }
 
     let date = Local::now();
