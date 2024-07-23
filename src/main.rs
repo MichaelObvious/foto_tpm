@@ -21,7 +21,8 @@ use walkdir::WalkDir;
 use std::collections::VecDeque;
 use std::ffi::{CString, c_void};
 use std::path::PathBuf;
-use std::{fs, io, vec, fmt};
+use std::time::Duration;
+use std::{fmt, fs, io, thread, vec};
 use std::io::{Cursor, Write};
 
 mod gui;
@@ -43,20 +44,23 @@ fn clean_string(s: String) -> String {
 }
 
 fn check_single_image_path(p: PathBuf, images: &mut Vec<PathBuf>){
-    if let Some(extension) = p.clone().extension() {
-        if p.exists() {
-            if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" {
-                images.push(p);
-            } else if extension == "txt" {
-                let content = fs::read_to_string(p).unwrap();
-                let nps = content.lines()
-                    .collect::<Vec<_>>();
+    match p.try_exists() {
+        Ok(true) => {
+            if let Some(extension) = p.clone().extension() {
+                if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" || extension == "PNG" {
+                    images.push(p);
+                } else if extension == "txt" {
+                    let content = fs::read_to_string(p).unwrap();
+                    let nps = content.lines()
+                        .collect::<Vec<_>>();
 
-                for np in check_images_paths(&nps) {
-                    images.push(np);
+                    for np in check_images_paths(&nps) {
+                        images.push(np);
+                    }
                 }
             }
-        }
+        },
+        _ => {},
     }
 }
 
@@ -94,7 +98,6 @@ fn save_used_files(path: &str,  images: &Vec<ImgData>) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 fn find_files(dir: &str) -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = Vec::new();
     for element in std::path::Path::new(dir).read_dir().unwrap() {
@@ -196,6 +199,7 @@ fn gui_app() {
     let mut font_size = 0;
 
     let mut file_queue = VecDeque::new();
+    let mut last_image_loaded = false;
     let mut images: Vec<ImgData> = Vec::new();
 
     let mut file_list_scroll_index = 0;
@@ -289,7 +293,17 @@ fn gui_app() {
                     let new_files = check_images_paths(&rl.load_dropped_files().paths());
                     file_queue.append(&mut new_files.into());
 
+                    if last_image_loaded {
+                        thread::sleep(Duration::from_millis(250));
+                        last_image_loaded = false;
+                    }
+
                     if let Some(path) = file_queue.pop_front() {
+                        if file_queue.len() == 0 {
+                            last_image_loaded = true;
+                        }
+                        
+                        println!("Loading image: `{}`...", path.display());
                         if let Ok(img_) = ImageReader::open(path.clone()) {
                             if let Ok(img) = img_.decode() {
                                 let img_scaled;
@@ -303,27 +317,27 @@ fn gui_app() {
                                 } else {
                                     img_scaled = img.resize_to_fill(small_dim, big_dim, Triangle);
                                 }
-                                if let Some(bytes_) = img_scaled.as_rgb8() {
-                                    let mut bytes = bytes_.as_raw().to_owned();
-                                    
-                                    let rimg = unsafe{
-                                        Image::from_raw(raylib::ffi::Image {
-                                            data: bytes.as_mut_ptr() as *mut c_void,
-                                            width: img_scaled.width() as i32,
-                                            height: img_scaled.height() as i32,
-                                            mipmaps: 1,
-                                            format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
-                                        })
-                                    };
-                                    
-                                    // not eliminating unwrap because do not want to mess with mem::forget
-                                    // should work fine anyway...
-                                    let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
-                                    std::mem::forget(rimg);
-                                    let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
-    
-                                    images.push(ImgData::new(path.canonicalize().unwrap_or(path), filename, img_scaled, texture));
-                                }
+
+                                let bytes_ = img_scaled.to_rgb8();
+                                let mut bytes = bytes_.as_raw().to_owned();
+                                
+                                let rimg = unsafe {
+                                    Image::from_raw(raylib::ffi::Image {
+                                        data: bytes.as_mut_ptr() as *mut c_void,
+                                        width: img_scaled.width() as i32,
+                                        height: img_scaled.height() as i32,
+                                        mipmaps: 1,
+                                        format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
+                                    })
+                                };
+                                
+                                // not eliminating unwrap because do not want to mess with mem::forget
+                                // should work fine anyway...
+                                let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
+                                std::mem::forget(rimg);
+                                let filename = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_owned();
+
+                                images.push(ImgData::new(path.canonicalize().unwrap_or(path), filename, img_scaled, texture));
                             }
                         }
                     }
@@ -570,6 +584,22 @@ fn gui_app() {
                         let drop_text = "Rilasci le foto";
                         let drop_text_width = d.measure_text(drop_text, font_size*2);
                         d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
+                    } else if !file_queue.is_empty() || last_image_loaded {
+                        let load_text = format!("Caricando {} foto{}", file_queue.len(), match (d.get_time() as u32) % 3 {
+                            // 0 => "Uploading",
+                            0 => ".",
+                            1 => "..",
+                            2 => "...",
+                            _ => unreachable!()
+                        });
+                        let load_text_width = d.measure_text(load_text.as_str(), font_size*2);
+                        let img_w = images.last().unwrap().image.width() as f32;
+                        let img_h = images.last().unwrap().image.height() as f32;
+                        let scale_x = w as f32 /img_w;
+                        let scale_y = h as f32 /img_h;
+                        let scale = scale_x.max(scale_y);
+                        d.draw_texture_ex(&images.last().unwrap().texture, rvec2(w as f32 / 2.0 - scale * img_w * 0.5, h as f32 / 2.0 - scale * img_h * 0.5), 0.0, scale, Color::WHITE.alpha(0.5));
+                        d.draw_text(&load_text, (w-load_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                     } else {
                         let img_w = images[file_list_active as usize].image.width() as f32;
                         let img_h = images[file_list_active as usize].image.height() as f32;
@@ -594,11 +624,7 @@ fn gui_app() {
                             }
                         }
                         
-                        if !file_queue.is_empty() {
-                            let load_text = format!("Caricando {} foto...", file_queue.len());
-                            let load_text_width = d.measure_text(load_text.as_str(), font_size);
-                            gui::draw_outlined_text(&mut d, load_text.as_str(), (w-load_text_width)/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
-                        } else {
+                        {
                             let load_text = format!("{}/{}", file_list_active+1, images.len());
                             let load_text_width = d.measure_text(load_text.as_str(), font_size);
                             gui::draw_outlined_text(&mut d, load_text.as_str(), w*5/8 - load_text_width/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
@@ -607,10 +633,10 @@ fn gui_app() {
                         let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
                         let max_viewable_index_offset = (h * 4 / 5) / item_height;
                         if list_moved_by_key {
-                            while file_list_scroll_index + max_viewable_index_offset <= file_list_active && file_list_scroll_index < images.len() as i32 {
+                            while file_list_scroll_index + max_viewable_index_offset - 1 <= file_list_active && file_list_scroll_index < images.len() as i32 {
                                 file_list_scroll_index += 1;
                             }
-                            while file_list_scroll_index > file_list_active && file_list_scroll_index > 0 {
+                            while file_list_scroll_index + 1 > file_list_active && file_list_scroll_index > 0 {
                                 file_list_scroll_index -= 1;
                             }
                             list_moved_by_key = false;
@@ -667,7 +693,7 @@ fn gui_app() {
                             
                             d.draw_texture_ex(&img.texture, rvec2(x, y), 0.0, scale, Color::WHITE);
                             
-                            let num_text = format!("{}", i+file_list_scroll_index as usize);
+                            let num_text = format!("{}", i+file_list_scroll_index as usize + 1);
                             let outline_size = 2;
                             gui::draw_outlined_text(&mut d, &num_text, x as i32 + outline_size * 2, y as i32 + outline_size + 1, font_size, outline_size, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
                         }
