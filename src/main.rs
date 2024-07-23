@@ -548,8 +548,7 @@ fn gui_app() {
 
         // RENDERING
         let title = "FOTO TPM";
-        let title_width = d.measure_text(title, font_size * 3);
-        d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
+        let title_width = d.measure_text(title, font_size * 3); // drawn at the end so it appears above everything
         if !upload {
             match app_tab {
                 AppTab::InputData => {
@@ -798,6 +797,7 @@ fn gui_app() {
 
             
         }
+        d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
     }
 
     let date = Local::now();
