@@ -99,9 +99,7 @@ pub fn gui_number_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_inde
 
 pub fn gui_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, label: &str, buffer: &mut Vec<u8>, size: i32, text_box: Rectangle) {
     let mut buf = buffer.clone();
-    if *idx == active_idx && (d.get_time() / 0.5)as u32 % 2 == 0 {
-        buf.push('_' as u8);
-    }
+    buf.push('~' as u8);
     buf.push(0);
 
     d.draw_text(label, text_box.x as i32, text_box.y as i32 - size, size, Color::WHITE);
@@ -110,10 +108,25 @@ pub fn gui_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, 
     } else {
         (Color::GRAY, Color::BLACK)
     };
+
+    let mut str = unsafe { CStr::from_bytes_with_nul_unchecked(&buf).to_str().unwrap_or_default() };
+    let side_padding = size*2/3;
+    
+    while d.measure_text(str, size) > text_box.width as i32 - side_padding*2 {
+        let mut chars = str.chars();
+        chars.next();
+        str = chars.as_str();
+    }
+
+    let s = if *idx == active_idx && (d.get_time() / 0.5)as u32 % 2 == 0 {
+        str.replace('~', "_")
+    } else {
+        str.replace('~', " ")
+    };
+
     d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, fg_color);
     d.draw_rectangle(text_box.x as i32 + 2, text_box.y as i32 + 2, text_box.width as i32 - 4, text_box.height as i32 - 4, bg_color);
-    let str = unsafe { CStr::from_bytes_with_nul_unchecked(&buf) };
-    d.draw_text(str.to_str().unwrap_or_default(), text_box.x as i32 + size*2/3, text_box.y as i32 + (text_box.height * 0.6) as i32 - size / 2, size, fg_color);
+    d.draw_text(&s, text_box.x as i32 + side_padding, text_box.y as i32 + (text_box.height * 0.6) as i32 - size / 2, size, fg_color);
     // d.gui_text_box(text_box, &mut buf, *idx == active_idx);
     *idx += 1;
 }
