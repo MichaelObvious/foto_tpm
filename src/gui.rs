@@ -105,11 +105,6 @@ pub fn gui_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, 
     buf.push(0);
 
     d.draw_text(label, text_box.x as i32, text_box.y as i32 - size, size, Color::WHITE);
-    let (bg_color, fg_color) =  if *idx == active_idx {
-        (Color::LIGHTBLUE, Color::DARKCYAN)
-    } else {
-        (Color::GRAY, Color::BLACK)
-    };
 
     let mut str = unsafe { CStr::from_bytes_with_nul_unchecked(&buf).to_str().unwrap_or_default().to_owned() };
     let mut s = str.clone();
@@ -133,10 +128,21 @@ pub fn gui_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, 
         s.replace('~', " ")
     };
 
-    let outline_size = 3;
-    d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, fg_color);
-    d.draw_rectangle(text_box.x as i32 + outline_size, text_box.y as i32 + outline_size, text_box.width as i32 - outline_size*2, text_box.height as i32 - outline_size*2, bg_color);
-    d.draw_text(&s, text_box.x as i32 + side_padding, text_box.y as i32 + (text_box.height * 0.6) as i32 - size / 2, size, fg_color);
+    let (fg, bg, outline_size) = if is_active {
+        (Color::new(4, 146, 199, 255), Color::new(151, 232, 255, 255), 1.0)
+    } else if unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), text_box.into()) } {
+        (Color::new(91, 178, 217, 255), Color::WHITE.alpha(0.0), 1.0)
+    } else {
+        (Color::new(104, 104, 104, 255), Color::WHITE.alpha(0.0), 1.0)
+    };
+
+    // d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, fg);
+    d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, bg);
+    d.draw_line_ex(rvec2(text_box.x, text_box.y), rvec2(text_box.x + text_box.width, text_box.y), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x + text_box.width, text_box.y), rvec2(text_box.x + text_box.width, text_box.y + text_box.height), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x + text_box.width, text_box.y + text_box.height), rvec2(text_box.x, text_box.y + text_box.height), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x, text_box.y + text_box.height), rvec2(text_box.x, text_box.y), outline_size, fg);
+    d.draw_text(&s, text_box.x as i32 + side_padding, text_box.y as i32 + (text_box.height * 0.6) as i32 - size / 2, size, fg);
     // d.gui_text_box(text_box, &mut buf, *idx == active_idx);
     *idx += 1;
 }
