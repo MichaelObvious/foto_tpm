@@ -187,6 +187,7 @@ fn gui_app() {
         .size(640, 480)
         .title("Foto TPM")
         .resizable()
+        .log_level(TraceLogLevel::LOG_WARNING)
         .build();
 
     rl.set_exit_key(None);
@@ -303,7 +304,7 @@ fn gui_app() {
                             last_image_loaded = true;
                         }
                         
-                        println!("Loading image: `{}`...", path.display());
+                        println!("[INFO]: Loading image: `{}`...", path.display());
                         if let Ok(img_) = ImageReader::open(path.clone()) {
                             if let Ok(img) = img_.decode() {
                                 let img_scaled;
@@ -801,8 +802,16 @@ fn gui_app() {
         gui::draw_outlined_text(&mut d, title, (w-title_width)/2, 25, font_size*3, font_size/10, THEME_COLOR, THEME_COLOR);
     }
 
-    let date = Local::now();
-    let _ = save_used_files(&format!("fototpm-imglist_{}.txt", date.format("%Y-%m-%d %H:%M:%S")), &images);
+    if !images.is_empty() {
+        let date = Local::now();
+        let file_list_path = format!("fototpm-imglist_{}.txt", date.format("%Y-%m-%d %H:%M:%S"));
+        let _ = save_used_files(&file_list_path, &images);
+        println!("YOOO");
+        if let Ok(full_path) = PathBuf::from(file_list_path).canonicalize() {
+            println!("[INFO]: List of image files in use saved in `{}`.", full_path.display());
+        }
+    }
+
 }
 
 fn main() {
