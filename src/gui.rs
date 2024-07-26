@@ -1,4 +1,4 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 
 use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
