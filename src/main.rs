@@ -11,7 +11,7 @@ use ftp::FtpStream;
 use image::io::Reader as ImageReader;
 use image::{GenericImageView, DynamicImage};
 use path_slash::PathBufExt as _;
-use image::imageops::FilterType::Triangle;
+use image::imageops::FilterType::Lanczos3;
 use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
 use strum::IntoEnumIterator;
@@ -314,9 +314,9 @@ fn gui_app() {
                                 let big_dim = if hd_images { HD_BIGGER_DIMENSION } else { BIGGER_DIMENSION };
 
                                 if size.0 > size.1 {
-                                    img_scaled = img.resize_to_fill(big_dim, small_dim, Triangle);
+                                    img_scaled = img.resize_to_fill(big_dim, small_dim, Lanczos3);
                                 } else {
-                                    img_scaled = img.resize_to_fill(small_dim, big_dim, Triangle);
+                                    img_scaled = img.resize_to_fill(small_dim, big_dim, Lanczos3);
                                 }
 
                                 let bytes_ = img_scaled.to_rgb8();
