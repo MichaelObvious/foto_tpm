@@ -8,7 +8,7 @@ extern crate walkdir;
 
 use chrono::Local;
 use ftp::FtpStream;
-use image::io::Reader as ImageReader;
+use image::ImageReader;
 use image::{GenericImageView, DynamicImage};
 use path_slash::PathBufExt as _;
 use image::imageops::FilterType::Lanczos3;
