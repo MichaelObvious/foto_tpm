@@ -601,21 +601,31 @@ fn gui_app() {
                         d.draw_texture_ex(&images.last().unwrap().texture, rvec2(w as f32 / 2.0 - scale * img_w * 0.5, h as f32 / 2.0 - scale * img_h * 0.5), 0.0, scale, Color::WHITE.alpha(0.5));
                         d.draw_text(&load_text, (w-load_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                     } else {
+                        let upload_text = "upload";
+                        let upload_button_width = d.measure_text(&upload_text, font_size) as f32 + 20.0 * 2.0;
+                        let upload_button_height = font_size as f32 + 20.0 * 2.0;
+                        let upload_button_rect = rrect(
+                            w as f32 - upload_button_width - font_size as f32, 
+                            h as f32 - upload_button_height - font_size as f32,
+                            upload_button_width, upload_button_height
+                        );
+
                         let img_w = images[file_list_active as usize].image.width() as f32;
                         let img_h = images[file_list_active as usize].image.height() as f32;
                         let scale_x = (w as f32 * 4.0/5.0)/img_w;
                         let scale_y = (h as f32 * 4.0/5.0)/img_h;
                         let scale = scale_x.min(scale_y);
 
-                        d.draw_texture_ex(&images[file_list_active as usize].texture, rvec2( w as f32 * (2.0 + 3.0) / 8.0 - (img_w * scale) / 2.0, (h as f32 / 5.0).max(167.0)), 0.0, scale, Color::WHITE);
+                        let img_x = w as f32 * (2.0 + 3.0) / 8.0 - (img_w * scale) / 2.0 - (w as f32 - upload_button_rect.x) / 2.0;
+                        let img_y = (h as f32 / 5.0).max(167.0);
+                        d.draw_texture_ex(&images[file_list_active as usize].texture, rvec2(img_x, img_y), 0.0, scale, Color::WHITE);
 
                         draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
 
-                        let upload_button_width = (120f32).max(w as f32 / 12.0);
-                        let upload_button_height = (font_size as f32*1.5).max(h as f32 / 12.0);
-                        let upload_text = CString::new("upload").unwrap_or_default();
+
+                        let upload_text_cstr = CString::new(upload_text).unwrap_or_default();
                         let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
-                        let upload_pressed = d.gui_button(rrect(w as f32 - upload_button_width - 25.0, h as f32 - upload_button_height - 25.0, upload_button_width, upload_button_height ), Some(upload_text.as_c_str()));
+                        let upload_pressed = d.gui_button(upload_button_rect, Some(upload_text_cstr.as_c_str()));
 
                         if upload_pressed {
                             upload = true;
