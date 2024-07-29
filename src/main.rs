@@ -806,7 +806,6 @@ fn gui_app() {
         let date = Local::now();
         let file_list_path = format!("fototpm-imglist_{}.txt", date.format("%Y-%m-%d %H:%M:%S"));
         let _ = save_used_files(&file_list_path, &images);
-        println!("YOOO");
         if let Ok(full_path) = PathBuf::from(file_list_path).canonicalize() {
             println!("[INFO]: List of image files in use saved in `{}`.", full_path.display());
         }
