@@ -295,7 +295,7 @@ fn gui_app() {
                     file_queue.append(&mut new_files.into());
 
                     if last_image_loaded {
-                        thread::sleep(Duration::from_millis(250));
+                        thread::sleep(Duration::from_millis(500));
                         last_image_loaded = false;
                     }
 
