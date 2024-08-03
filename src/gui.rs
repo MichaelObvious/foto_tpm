@@ -1,7 +1,12 @@
 use std::ffi::CStr;
 
+use ffi::IsKeyPressedRepeat;
 use raylib::ffi::CheckCollisionPointRec;
 use raylib::prelude::*;
+
+pub fn is_key_pressed_repeat(key: KeyboardKey) -> bool {
+    unsafe { IsKeyPressedRepeat(key as i32) }
+}
 
 pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index: &mut i32, buffer: &mut Vec<u8>, max_len: usize, text_box: Rectangle) {
 
@@ -46,7 +51,7 @@ pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index:
             }
         }
 
-        if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) {
+        if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) || is_key_pressed_repeat(KeyboardKey::KEY_BACKSPACE) {
             // println!("{:?}", buffer);
             if rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) {
                 buffer.clear();
@@ -86,10 +91,7 @@ pub fn gui_number_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_inde
             }
         }
 
-        if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) {
-            if rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) {
-                buffer.clear();
-            }
+        if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) || is_key_pressed_repeat(KeyboardKey::KEY_BACKSPACE) {
             buffer.pop();
             // println!("BACK!");
         }

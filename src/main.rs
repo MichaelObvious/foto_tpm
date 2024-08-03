@@ -351,20 +351,20 @@ fn gui_app() {
 
                     let fast_step = (images.len() as f32 / 10.0).ceil() as i32;
                     if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
-                        if rl.is_key_pressed(KeyboardKey::KEY_UP) {
+                        if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
                             file_list_active -= fast_step;
                             list_moved_by_key = true;
                         }
-                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) {
+                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
                             file_list_active += fast_step;
                             list_moved_by_key = true;
                         }
                     } else {
-                        if rl.is_key_pressed(KeyboardKey::KEY_UP) {
+                        if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
                             file_list_active -= 1;
                             list_moved_by_key = true;
                         }
-                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) {
+                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
                             file_list_active += 1;
                             list_moved_by_key = true;
                         }
