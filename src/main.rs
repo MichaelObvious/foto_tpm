@@ -187,10 +187,12 @@ fn gui_app() {
         .size(640, 480)
         .title("Foto TPM")
         .resizable()
+        .vsync()
         .log_level(TraceLogLevel::LOG_WARNING)
         .build();
 
     rl.set_exit_key(None);
+    rl.set_target_fps(30);
 
     let mut app_tab = AppTab::InputData;
     let mut upload = false;
