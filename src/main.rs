@@ -7,6 +7,7 @@ extern crate path_slash;
 extern crate walkdir;
 
 use chrono::Local;
+use ffi::{GetCurrentMonitor, GetMonitorHeight, GetMonitorWidth};
 use ftp::FtpStream;
 use image::ImageReader;
 use image::{GenericImageView, DynamicImage};
@@ -193,6 +194,14 @@ fn gui_app() {
 
     rl.set_exit_key(None);
     rl.set_target_fps(30);
+
+    {
+        let monitor_id = unsafe { GetCurrentMonitor() };
+        let m_width = unsafe { GetMonitorWidth(monitor_id) };
+        let m_height = unsafe { GetMonitorHeight(monitor_id) };
+        rl.set_window_size(m_width*2/3, m_height*2/3);
+        rl.set_window_position(m_width/6, m_height/6);
+    }
 
     let mut app_tab = AppTab::InputData;
     let mut upload = false;
