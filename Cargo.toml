@@ -7,12 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chrono = "0.4"
+ftp = "3.0.1"
 image = "0.25"
 json = "0.12"
-ftp = "3.0.1"
+path-slash = "0.2"
+raylib = { version = "5.0" }
 strum = "0.25"
 strum_macros = "0.25"
-path-slash = "0.2"
-chrono = "0.4"
 walkdir = "2.5"
-raylib = { version = "5.0" }
