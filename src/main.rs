@@ -51,7 +51,7 @@ fn check_single_image_path(p: PathBuf, images: &mut Vec<PathBuf>){
                 if extension == "jpeg" || extension == "jpg" || extension == "JPG" || extension == "png" || extension == "PNG" {
                     images.push(p);
                 } else if extension == "txt" {
-                    let content = fs::read_to_string(p).unwrap();
+                    let content = fs::read_to_string(p).unwrap_or_default();
                     let nps = content.lines()
                         .collect::<Vec<_>>();
 
