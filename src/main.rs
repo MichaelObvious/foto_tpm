@@ -185,7 +185,7 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
 
 fn gui_app() {
     let (mut rl, thread) = raylib::init()
-        .size(960, 540)
+        .size(720, 540)
         .title("Foto TPM")
         .resizable()
         .vsync()
@@ -195,13 +195,15 @@ fn gui_app() {
     rl.set_exit_key(None);
     rl.set_target_fps(30);
 
-    {
+    if false {
         let monitor_id = unsafe { GetCurrentMonitor() };
         let m_width = unsafe { GetMonitorWidth(monitor_id) };
         let m_height = unsafe { GetMonitorHeight(monitor_id) };
         rl.set_window_size(m_width*2/3, m_height*2/3);
         rl.set_window_position(m_width/6, m_height/6);
     }
+
+    rl.set_window_min_size(640, 480);
 
     let mut app_tab = AppTab::InputData;
     let mut upload = false;
@@ -400,7 +402,7 @@ fn gui_app() {
                             } else {
                                 images[file_list_active as usize].image.rotate90()
                             };
-                            
+
                             let bytes_ = rotated_image.to_rgb8();
                             let mut bytes = bytes_.as_raw().to_owned();
                             
