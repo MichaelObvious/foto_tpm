@@ -185,7 +185,7 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
 
 fn gui_app() {
     let (mut rl, thread) = raylib::init()
-        .size(640, 480)
+        .size(960, 540)
         .title("Foto TPM")
         .resizable()
         .vsync()
