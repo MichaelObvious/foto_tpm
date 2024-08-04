@@ -400,26 +400,26 @@ fn gui_app() {
                             } else {
                                 images[file_list_active as usize].image.rotate90()
                             };
-                            if let Some(bytes_) = rotated_image.as_rgb8() {
-                                let mut bytes = bytes_.as_raw().to_owned();
-                                
-                                let rimg = unsafe{
-                                    Image::from_raw(raylib::ffi::Image {
-                                        data: bytes.as_mut_ptr() as *mut c_void,
-                                        width: rotated_image.width() as i32,
-                                        height: rotated_image.height() as i32,
-                                        mipmaps: 1,
-                                        format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
-                                    })
-                                };
-                                
-                                // not eliminating unwrap because do not want to mess with mem::forget
-                                // should work fine anyway...
-                                let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
-                                std::mem::forget(rimg);
-                                images[file_list_active as usize].image = rotated_image;
-                                images[file_list_active as usize].texture = texture;
-                            }
+                            
+                            let bytes_ = rotated_image.to_rgb8();
+                            let mut bytes = bytes_.as_raw().to_owned();
+                            
+                            let rimg = unsafe{
+                                Image::from_raw(raylib::ffi::Image {
+                                    data: bytes.as_mut_ptr() as *mut c_void,
+                                    width: rotated_image.width() as i32,
+                                    height: rotated_image.height() as i32,
+                                    mipmaps: 1,
+                                    format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
+                                })
+                            };
+                            
+                            // not eliminating unwrap because do not want to mess with mem::forget
+                            // should work fine anyway...
+                            let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
+                            std::mem::forget(rimg);
+                            images[file_list_active as usize].image = rotated_image;
+                            images[file_list_active as usize].texture = texture;
                         }
                     }
                 }
