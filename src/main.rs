@@ -229,7 +229,7 @@ fn gui_app() {
     let mut utente_buf = Vec::new();
     let mut pw_buf = Vec::new();
 
-    let text_box_width = 500.0;
+    let mut text_box_width;
     let mut text_box_height;
 
     let mut titolo_rect = rrect(0.0, 0.0, 0.0, 0. );
@@ -273,6 +273,7 @@ fn gui_app() {
                         text_box_active = -1;
                     }
 
+                    text_box_width = 500f32.max(w as f32 / 3.0);
                     let mut idx = 0;
                     text_box_height = font_size as f32 * 2.5;
                     let mut y = (h as f32 * 3.0 / 11.0).max(200.0);
