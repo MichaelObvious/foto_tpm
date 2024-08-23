@@ -603,11 +603,11 @@ fn gui_app() {
                         let drop_text_width = d.measure_text(drop_text, font_size*2);
                         d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
                     } else if !file_queue.is_empty() || last_image_loaded {
-                        let load_text = format!("Caricando {} foto{}", file_queue.len(), match (d.get_time() as u32) % 3 {
-                            // 0 => "Uploading",
-                            0 => ".",
-                            1 => "..",
-                            2 => "...",
+                        let load_text = format!("Caricando {} foto{}", file_queue.len(), match (d.get_time() as u32) % 4 {
+                            0 => "",
+                            1 => ".",
+                            2 => "..",
+                            3 => "...",
                             _ => unreachable!()
                         });
                         let load_text_width = d.measure_text(load_text.as_str(), font_size*2);
@@ -736,11 +736,11 @@ fn gui_app() {
                 UploadStatus::None => {},
                 UploadStatus::CreatingDir => {
                     let upload_text = "Creazione della cartella";
-                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
-                        // 0 => "Uploading",
-                        0 => ".",
-                        1 => "..",
-                        2 => "...",
+                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 4 {
+                        0 => "",
+                        1 => ".",
+                        2 => "..",
+                        3 => "...",
                         _ => unreachable!()
                     });
                     let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
@@ -749,11 +749,11 @@ fn gui_app() {
                 },
                 UploadStatus::SavingImage(i) => {
                     let upload_text = "Salvando le immagini in";
-                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 3 {
-                        // 0 => "Uploading",
-                        0 => ".",
-                        1 => "..",
-                        2 => "...",
+                    let upload_label_text = format!("{} `{}`{}", upload_text, image_dir, match (d.get_time() as u32) % 4 {
+                        0 => "",
+                        1 => ".",
+                        2 => "..",
+                        3 => "...",
                         _ => unreachable!()
                     });
                     let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
@@ -773,11 +773,11 @@ fn gui_app() {
                 },
                 UploadStatus::Connecting => {
                     let upload_text = "Connessione a";
-                    let upload_label_text = format!("{} `{}`{}", upload_text, server, match (d.get_time() as u32) % 3 {
-                        // 0 => "Uploading",
-                        0 => ".",
-                        1 => "..",
-                        2 => "...",
+                    let upload_label_text = format!("{} `{}`{}", upload_text, server, match (d.get_time() as u32) % 4 {
+                        0 => "",
+                        1 => ".",
+                        2 => "..",
+                        3 => "...",
                         _ => unreachable!()
                     });
                     let upload_text_width = d.measure_text(upload_label_text.as_str(), font_size*2);
@@ -786,11 +786,11 @@ fn gui_app() {
                 },
                 UploadStatus::UploadingImage(i) => {
                     let upload_text = "Uploading";
-                    let upload_label_text = format!("{}{}", upload_text, match (d.get_time() as u32) % 3 {
-                        // 0 => "Uploading",
-                        0 => ".",
-                        1 => "..",
-                        2 => "...",
+                    let upload_label_text = format!("{}{}", upload_text, match (d.get_time() as u32) % 4 {
+                        0 => "",
+                        1 => ".",
+                        2 => "..",
+                        3 => "...",
                         _ => unreachable!()
                     });
                     let upload_text_width = d.measure_text(upload_text, font_size*2);
