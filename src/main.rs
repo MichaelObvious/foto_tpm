@@ -195,13 +195,11 @@ fn gui_app() {
     rl.set_exit_key(None);
     rl.set_target_fps(30);
 
-    if false {
-        let monitor_id = unsafe { GetCurrentMonitor() };
-        let m_width = unsafe { GetMonitorWidth(monitor_id) };
-        let m_height = unsafe { GetMonitorHeight(monitor_id) };
-        rl.set_window_size(m_width*2/3, m_height*2/3);
-        rl.set_window_position(m_width/6, m_height/6);
-    }
+    let monitor_id = unsafe { GetCurrentMonitor() };
+    let m_width = unsafe { GetMonitorWidth(monitor_id) };
+    let m_height = unsafe { GetMonitorHeight(monitor_id) };
+    rl.set_window_size(m_width*2/3, m_height*2/3);
+    rl.set_window_position(m_width/6, m_height/6);
 
     rl.set_window_min_size(640, 480);
 
