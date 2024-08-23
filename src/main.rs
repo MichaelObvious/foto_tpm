@@ -591,7 +591,7 @@ fn gui_app() {
                     let small_font_size = font_size * 3 / 4;
                     d.draw_text("(premere prima di importare le foto)", (hd_rect.x + hd_rect.width * 2.0) as i32 + hd_text_size, (hd_rect.y + hd_rect.height) as i32 - small_font_size, small_font_size, hd_color);
                     
-                    let version_font_size = font_size * 4 / 5;
+                    let version_font_size = font_size * 9 / 10;
                     let version_text_size = d.measure_text(&version_text, version_font_size);
                     d.draw_text(&version_text, w-version_text_size - 10, h-version_font_size - 5, version_font_size, Color::WHITE.alpha(0.5));
                 },
