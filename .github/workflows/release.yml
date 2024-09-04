@@ -79,7 +79,7 @@ jobs:
       - name: Setup docker (missing on MacOS)
         if: runner.os == 'macos'
         run: |
-          brew install --cask colima docker docker-compose colima
+          brew install colima docker docker-compose colima
           colima start
 
       # - name: Run cargo test
