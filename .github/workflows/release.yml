@@ -85,7 +85,6 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install docker
-          colima start
 
       # - name: Run cargo test
       #   uses: actions-rs/cargo@v1
