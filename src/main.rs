@@ -434,7 +434,7 @@ fn gui_app() {
                     titolo = clean_string(String::from_utf8(titolo_buf.clone()).unwrap_or_default());
                     branca = clean_string(String::from_utf8(branca_buf.clone()).unwrap_or_default()).to_uppercase();
                     
-                    data = format!("{:02}{:02}{:02}",String::from_utf8(anno_buf.clone()).unwrap_or_default(), String::from_utf8(mese_buf.clone()).unwrap_or_default(), String::from_utf8(giorno_buf.clone()).unwrap_or_default());
+                    data = format!("{:0>2}{:0>2}{:0>2}",String::from_utf8(anno_buf.clone()).unwrap_or_default(), String::from_utf8(mese_buf.clone()).unwrap_or_default(), String::from_utf8(giorno_buf.clone()).unwrap_or_default());
 
                     anno = 2000 + String::from_utf8(anno_buf.clone()).unwrap_or_default().parse::<usize>().unwrap_or(0);
                     mese = String::from_utf8(mese_buf.clone()).unwrap_or_default().parse::<usize>().unwrap_or(0);
@@ -643,13 +643,22 @@ fn gui_app() {
 
 
                         let upload_text_cstr = CString::new(upload_text).unwrap_or_default();
-                        let input_not_given = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf].iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().is_empty();
+                        let inputs_vec = vec![&titolo_buf, &branca_buf, &giorno_buf, &mese_buf, &anno_buf, &server_buf, &utente_buf, &pw_buf];
+                        let input_not_given = inputs_vec.iter().any(|x| x.is_empty());
                         let upload_pressed = d.gui_button(upload_button_rect, Some(upload_text_cstr.as_c_str()));
 
                         if upload_pressed {
                             upload = true;
+
                             if input_not_given {
-                                upload_status = UploadStatus::Error(format!("Alcuni voci nella scheda `{}` non sono state compilate.", AppTab::InputData));
+                                text_box_active = -1;
+                                for b in inputs_vec.iter() {
+                                    text_box_active += 1;
+                                    if b.is_empty() {
+                                        break;
+                                    }
+                                }
+                                upload_status = UploadStatus::Error(format!("Alcune voci nella scheda `{}` non sono state compilate.", AppTab::InputData));
                             }
                         }
                         
