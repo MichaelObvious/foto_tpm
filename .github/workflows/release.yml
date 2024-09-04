@@ -9,7 +9,7 @@ on:
     ## - release
 
 env:
-  BIN_NAME: bfoot
+  BIN_NAME: foto_tre_pini
   PROJECT_NAME: foto_tre_pini
   REPO_NAME: MichaelObvious/foto_tre_pini
   BREW_TAP: jondot/homebrew-tap
