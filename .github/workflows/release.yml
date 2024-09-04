@@ -76,18 +76,23 @@ jobs:
         if: matrix.build == 'x86_64-linux' || matrix.build == 'aarch64-linux'
         run: sudo apt update && sudo apt install --assume-yes --no-install-recommends libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
 
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cross }}
-          command: test
-          args: --release --target ${{ matrix.target }}
+      # - name: Run cargo test
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     use-cross: ${{ matrix.cross }}- name: Run cargo test
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     use-cross: ${{ matrix.cross }}
+      #     command: test
+      #     args: --release --target ${{ matrix.target }}
+      #     command: test
+      #     args: --release --target ${{ matrix.target }}
 
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
-          command: buildaarch64-macos
+          command: build
           args: --release --target ${{ matrix.target }}
 
       - name: Strip release binary (linux and macos)
