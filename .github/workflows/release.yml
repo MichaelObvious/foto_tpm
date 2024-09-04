@@ -73,7 +73,7 @@ jobs:
       
       - name: Install dependencies (linux)
         shell: bash
-         if: matrix.build == 'x86_64-linux' || matrix.build == 'aarch64-linux'
+        if: matrix.build == 'x86_64-linux' || matrix.build == 'aarch64-linux'
         run: sudo apt update && sudo apt install --assume-yes --no-install-recommends libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
 
       - name: Run cargo test
