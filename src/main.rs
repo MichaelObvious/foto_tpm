@@ -355,75 +355,75 @@ fn gui_app() {
                                 images.push(ImgData::new(path.canonicalize().unwrap_or(path), filename, img_scaled, texture));
                             }
                         }
-                    }
-
-                    if rl.is_key_pressed(KeyboardKey::KEY_DELETE) {
-                        images.remove(file_list_active as usize);
-                        list_moved_by_key = true;
-                    }
-
-                    let prev_file_list_active = file_list_active;
-
-                    let fast_step = (images.len() as f32 / 10.0).ceil() as i32;
-                    if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
-                        if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
-                            file_list_active -= fast_step;
-                            list_moved_by_key = true;
-                        }
-                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
-                            file_list_active += fast_step;
-                            list_moved_by_key = true;
-                        }
                     } else {
-                        if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
-                            file_list_active -= 1;
+                        if rl.is_key_pressed(KeyboardKey::KEY_DELETE) {
+                            images.remove(file_list_active as usize);
                             list_moved_by_key = true;
                         }
-                        if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
-                            file_list_active += 1;
-                            list_moved_by_key = true;
-                        }
-                    }
 
-                    file_list_active = file_list_active.min(images.len() as i32 - 1).max(0);
+                        let prev_file_list_active = file_list_active;
 
-                    if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
-                        if (file_list_active - prev_file_list_active).abs() <= 1 {
-                            images.swap(prev_file_list_active as usize, file_list_active as usize);
+                        let fast_step = (images.len() as f32 / 10.0).ceil() as i32;
+                        if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
+                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
+                                file_list_active -= fast_step;
+                                list_moved_by_key = true;
+                            }
+                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
+                                file_list_active += fast_step;
+                                list_moved_by_key = true;
+                            }
                         } else {
-                            let img_to_move = images.remove(prev_file_list_active as usize);
-                            images.insert(file_list_active as usize, img_to_move);
+                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
+                                file_list_active -= 1;
+                                list_moved_by_key = true;
+                            }
+                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
+                                file_list_active += 1;
+                                list_moved_by_key = true;
+                            }
                         }
-                    }
 
+                        file_list_active = file_list_active.min(images.len() as i32 - 1).max(0);
 
-                    if rl.is_key_pressed(KeyboardKey::KEY_R) {
-                        if file_list_active >= 0 && !images.is_empty() {
-                            let rotated_image = if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
-                                images[file_list_active as usize].image.rotate270()
+                        if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
+                            if (file_list_active - prev_file_list_active).abs() <= 1 {
+                                images.swap(prev_file_list_active as usize, file_list_active as usize);
                             } else {
-                                images[file_list_active as usize].image.rotate90()
-                            };
+                                let img_to_move = images.remove(prev_file_list_active as usize);
+                                images.insert(file_list_active as usize, img_to_move);
+                            }
+                        }
 
-                            let bytes_ = rotated_image.to_rgb8();
-                            let mut bytes = bytes_.as_raw().to_owned();
-                            
-                            let rimg = unsafe{
-                                Image::from_raw(raylib::ffi::Image {
-                                    data: bytes.as_mut_ptr() as *mut c_void,
-                                    width: rotated_image.width() as i32,
-                                    height: rotated_image.height() as i32,
-                                    mipmaps: 1,
-                                    format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
-                                })
-                            };
-                            
-                            // not eliminating unwrap because do not want to mess with mem::forget
-                            // should work fine anyway...
-                            let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
-                            std::mem::forget(rimg);
-                            images[file_list_active as usize].image = rotated_image;
-                            images[file_list_active as usize].texture = texture;
+
+                        if rl.is_key_pressed(KeyboardKey::KEY_R) {
+                            if file_list_active >= 0 && !images.is_empty() {
+                                let rotated_image = if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
+                                    images[file_list_active as usize].image.rotate270()
+                                } else {
+                                    images[file_list_active as usize].image.rotate90()
+                                };
+
+                                let bytes_ = rotated_image.to_rgb8();
+                                let mut bytes = bytes_.as_raw().to_owned();
+                                
+                                let rimg = unsafe{
+                                    Image::from_raw(raylib::ffi::Image {
+                                        data: bytes.as_mut_ptr() as *mut c_void,
+                                        width: rotated_image.width() as i32,
+                                        height: rotated_image.height() as i32,
+                                        mipmaps: 1,
+                                        format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R8G8B8 as i32
+                                    })
+                                };
+                                
+                                // not eliminating unwrap because do not want to mess with mem::forget
+                                // should work fine anyway...
+                                let texture = rl.load_texture_from_image(&thread, &rimg).unwrap();
+                                std::mem::forget(rimg);
+                                images[file_list_active as usize].image = rotated_image;
+                                images[file_list_active as usize].texture = texture;
+                            }
                         }
                     }
                 }
