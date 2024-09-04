@@ -359,6 +359,7 @@ fn gui_app() {
 
                     if rl.is_key_pressed(KeyboardKey::KEY_DELETE) {
                         images.remove(file_list_active as usize);
+                        list_moved_by_key = true;
                     }
 
                     let prev_file_list_active = file_list_active;
