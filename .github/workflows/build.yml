@@ -25,7 +25,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
 
       - name: Install libraries
-        run: sudo apt update && sudo apt install --assume-yes --no-install-recommends libclang-3.9-dev clang-3.9 libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
+        run: sudo apt update && sudo apt install --assume-yes --no-install-recommends libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
