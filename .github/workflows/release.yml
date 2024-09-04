@@ -76,12 +76,12 @@ jobs:
         if: matrix.build == 'x86_64-linux' || matrix.build == 'aarch64-linux'
         run: sudo apt update && sudo apt install --assume-yes --no-install-recommends libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev libx11-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
       
-      - name: Setup docker (missing on MacOS)
-        if: runner.os == 'macos'
-        run: |
-          brew install colima
-          brew install --cask docker
-          colima start
+      # - name: Setup docker (missing on MacOS)
+      #   if: runner.os == 'macos'
+      #   run: |
+      #     brew install colima
+      #     brew install --cask docker
+      #     colima start
 
       # - name: Run cargo test
       #   uses: actions-rs/cargo@v1
@@ -106,14 +106,21 @@ jobs:
         if: matrix.build == 'x86_64-linux' || matrix.build == 'x86_64-macos'
         run: strip "target/${{ matrix.target }}/release/$BIN_NAME"
 
-      - name: Strip release binary (arm)
-        if: matrix.build == 'aarch64-linux' || matrix.build == 'aarch64-macos'
+      - name: Strip release binary (arm linux)
+        if: matrix.build == 'aarch64-linux'
         run: |
           docker run --rm -v \
             "$PWD/target:/target:Z" \
             rustembedded/cross:${{ matrix.target }} \
             aarch64-linux-gnu-strip \
             /target/${{ matrix.target }}/release/$BIN_NAME
+
+      - name: Strip release binary (arm macos)
+        if: matrix.build == 'aarch64-macos'
+        run : |
+          strip /target/${{ matrix.target }}/release/$BIN_NAME 
+          nm /target/${{ matrix.target }}/release/$BIN_NAME | grep secret | cut -f 3 -d ' ' > /tmp/remove
+          strip -R /tmp/remove /target/${{ matrix.target }}/release/$BIN_NAME
 
       - name: Build archive
         shell: bash
