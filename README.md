@@ -2,6 +2,16 @@
 
 Scegli le foto e riordinale. Il programma le ridimensiona e le carica automaticamente.
 
+## Indice
+
+- ["Installazione"](#installazione)
+    - [Windows](#windows)
+    - [MacOS](#macos)
+    - [GNU/Linux](#gnulinux)
+- [Utilizzo](#utilizzo)
+- [Scorciatoie da tastiera](#scorciatoie-da-tastiera)
+    - [Scheda `Foto`](#scheda-foto)
+
 ## "Installazione"
 
 ### Windows
@@ -12,7 +22,14 @@ Scegli le foto e riordinale. Il programma le ridimensiona e le carica automatica
 
 ### MacOS
 
-Fino ad ora il programma non è stato testato su MacOS.
+**Fino ad ora il programma non è stato testato su MacOS.**
+
+1. Scaricare il pacchetto corrispondente dalla pagina [`Releases`](https://github.com/MichaelObvious/foto_tpm/releases).
+    - Se il vostro processore (lo trovate cliccando sull'icona Apple, poi su `Informazioni su questo Mac` e guardando la voce `Processore`) è elencato come:
+        - `Apple M`... o `Apple Silicon` o simili, allora scaricare il pacchetto con `aarch64` nel nome;
+        - `Apple Intel`... o simili, allora scaricare il pacchetto con `x86_64` nel nome;
+2. Estrarre la cartella scaricata.
+3. Fare doppio click sull'applicazione nella cartella estratta per far partire il programma.
 
 ### GNU/Linux
 
