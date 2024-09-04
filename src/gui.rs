@@ -53,8 +53,10 @@ pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index:
 
         if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) || is_key_pressed_repeat(KeyboardKey::KEY_BACKSPACE) {
             // println!("{:?}", buffer);
-            if rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) {
-                buffer.clear();
+            if rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) {
+                while buffer.last().unwrap_or(&(' ' as u8)).to_owned() != ' ' as u8 {
+                    buffer.pop();
+                }
             }
             buffer.pop();
             // println!("delete   {:?}", buffer);
