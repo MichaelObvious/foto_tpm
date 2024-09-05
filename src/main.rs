@@ -184,6 +184,19 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
     }
 }
 
+fn get_next_tab(current_tab: AppTab) -> AppTab {
+    let mut last_tab = None;
+    for at in AppTab::iter().chain(AppTab::iter()) {
+        if let Some(last_tab) = last_tab {
+            if last_tab == current_tab {
+                return at;
+            }
+        }
+        last_tab = Some(at);
+    }
+    unreachable!();
+}
+
 fn gui_app() {
     let (mut rl, thread) = raylib::init()
         .size(720, 540)
@@ -207,6 +220,7 @@ fn gui_app() {
     let version_text = format!("v{}", env!("CARGO_PKG_VERSION"));
 
     let mut app_tab = AppTab::InputData;
+    let mut next_tab = app_tab;
     let mut upload = false;
     let mut upload_status = UploadStatus::None;
 
@@ -264,12 +278,17 @@ fn gui_app() {
     while !rl.window_should_close() {
 
         if !upload {
+            app_tab = next_tab;
+
             // Update
             match app_tab {
                 AppTab::InputData => {
-                    if rl.is_key_pressed(KeyboardKey::KEY_TAB) {
+                    if check_ctrl_shortcut(&rl, Some(KeyboardKey::KEY_TAB)) {
+                        next_tab = get_next_tab(app_tab);
+                    } else if rl.is_key_pressed(KeyboardKey::KEY_TAB) {
                         text_box_active = (text_box_active + 1) % 8;
                     }
+                    
                     if rl.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
                         text_box_active = -1;
                     }
@@ -357,6 +376,11 @@ fn gui_app() {
                             }
                         }
                     } else {
+                        if check_ctrl_shortcut(&rl, Some(KeyboardKey::KEY_TAB)) {
+                            next_tab = get_next_tab(app_tab);
+                            text_box_active = -1;
+                        }
+
                         if rl.is_key_pressed(KeyboardKey::KEY_DELETE) {
                             images.remove(file_list_active as usize);
                             list_moved_by_key = true;
