@@ -9,7 +9,7 @@ extern crate walkdir;
 use chrono::Local;
 use ffi::{GetCurrentMonitor, GetMonitorHeight, GetMonitorWidth};
 use ftp::FtpStream;
-use gui::{check_ctrl_shortcut, draw_outlined_text, gui_seecret_text_input, gui_text_input, is_key_pressed_repeat};
+use gui::{check_ctrl_shortcut, draw_outlined_text, gui_check_box, gui_check_box_update, gui_number_input_update, gui_seecret_text_input, gui_text_input, gui_text_input_update, is_key_pressed_repeat};
 use image::ImageReader;
 use image::{GenericImageView, DynamicImage};
 use path_slash::PathBufExt as _;
@@ -286,7 +286,7 @@ fn gui_app() {
                     if check_ctrl_shortcut(&rl, Some(KeyboardKey::KEY_TAB)) {
                         next_tab = get_next_tab(app_tab);
                     } else if rl.is_key_pressed(KeyboardKey::KEY_TAB) {
-                        text_box_active = (text_box_active + 1) % 8;
+                        text_box_active = (text_box_active + 1) % 9;
                     }
                     
                     if rl.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
@@ -315,14 +315,15 @@ fn gui_app() {
                     y += step;
                     hd_rect     = rrect((w as f32 - text_box_width)/2.0 + text_box_height*0.3, y + text_box_height*0.3, text_box_height * 0.4, text_box_height * 0.4 );
 
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 32, titolo_rect);
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut branca_buf, 8, branca_rect);
-                    gui::gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut giorno_buf, 2, giorno_rect);
-                    gui::gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut mese_buf, 2, mese_rect);
-                    gui::gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut anno_buf, 2, anno_rect);
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut server_buf, 32, server_rect);
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut utente_buf, 32, utente_rect);
-                    gui::gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut pw_buf, 32, pw_rect);
+                    gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut titolo_buf, 32, titolo_rect);
+                    gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut branca_buf, 8, branca_rect);
+                    gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut giorno_buf, 2, giorno_rect);
+                    gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut mese_buf, 2, mese_rect);
+                    gui_number_input_update(&mut rl, &mut idx, &mut text_box_active, &mut anno_buf, 2, anno_rect);
+                    gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut server_buf, 32, server_rect);
+                    gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut utente_buf, 32, utente_rect);
+                    gui_text_input_update(&mut rl, &mut idx, &mut text_box_active, &mut pw_buf, 32, pw_rect);
+                    gui_check_box_update(&mut rl, &mut idx, &mut text_box_active, hd_rect, &mut hd_images);
                 },
                 AppTab::SelectionLab => {
                     let new_files = check_images_paths(&rl.load_dropped_files().paths());
@@ -606,7 +607,8 @@ fn gui_app() {
 
                     // let hd_text = CString::new("HD (prima di caricare le foto)").unwrap();
 
-                    d.gui_check_box(hd_rect, None, &mut hd_images);
+                    // d.gui_check_box(hd_rect, None, &mut hd_images);
+                    gui_check_box(&mut d, &mut idx, text_box_active, hd_rect,  hd_images);
 
                     let hd_color = if hd_images { Color::WHITE } else { Color::GRAY };
 

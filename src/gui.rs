@@ -183,6 +183,52 @@ pub fn gui_seecret_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_id
     gui_text_input(d, idx, active_idx, label, &mut seecret_data, size, text_box);
 }
 
+pub fn gui_check_box_update(rl: &mut RaylibHandle, idx: &mut i32, active_idx: &mut i32, check_box: Rectangle, checked: &mut bool) {
+    let mouse_pressed = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
+    let mouse_in_boundaries = unsafe { CheckCollisionPointRec(rl.get_mouse_position().into(), check_box.into()) };
+    if mouse_pressed {
+        if mouse_in_boundaries {
+            *checked = !*checked;
+            *active_idx = *idx;
+        } else if *active_idx == *idx {
+            *active_idx = -1;
+        }
+    }
+    if rl.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
+        *active_idx = -1;
+    }
+
+    if idx == active_idx {
+        if rl.is_key_pressed(KeyboardKey::KEY_SPACE) || rl.is_key_pressed(KeyboardKey::KEY_ENTER) {
+            *checked = !*checked;
+        }
+    }
+
+    *idx += 1;
+}
+
+pub fn gui_check_box(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, text_box: Rectangle, checked: bool) {
+    let is_active = *idx == active_idx;
+
+    let (fg, bg, outline_size) = if is_active || unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), text_box.into()) } {
+        (Color::new(91, 178, 217, 255), Color::WHITE.alpha(0.0), 1.0)
+    } else {
+        (Color::new(104, 104, 104, 255), Color::WHITE.alpha(0.0), 1.0)
+    };
+
+    // d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, fg);
+    // d.draw_rectangle(text_box.x as i32, text_box.y as i32, text_box.width as i32, text_box.height as i32, bg);
+    d.draw_line_ex(rvec2(text_box.x, text_box.y), rvec2(text_box.x + text_box.width, text_box.y), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x + text_box.width, text_box.y), rvec2(text_box.x + text_box.width, text_box.y + text_box.height), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x + text_box.width, text_box.y + text_box.height), rvec2(text_box.x, text_box.y + text_box.height), outline_size, fg);
+    d.draw_line_ex(rvec2(text_box.x, text_box.y + text_box.height), rvec2(text_box.x, text_box.y), outline_size, fg);
+    if checked {
+        d.draw_rectangle(text_box.x as i32 + 2, text_box.y as i32 + 2, text_box.width as i32 - 3,  text_box.height as i32 - 3, fg);
+    }
+    // d.gui_text_box(text_box, &mut buf, *idx == active_idx);
+    *idx += 1;
+}
+
 // pub fn main() {
 //     let (mut rl, thread) = raylib::init()
 //         .size(640, 480)
