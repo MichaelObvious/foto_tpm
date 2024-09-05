@@ -210,8 +210,8 @@ pub fn gui_check_box_update(rl: &mut RaylibHandle, idx: &mut i32, active_idx: &m
 pub fn gui_check_box(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, text_box: Rectangle, checked: bool) {
     let is_active = *idx == active_idx;
 
-    let (fg, bg, outline_size) = if is_active || unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), text_box.into()) } {
-        (Color::new(91, 178, 217, 255), Color::WHITE.alpha(0.0), 1.0)
+    let (fg, rect_c, outline_size) = if is_active || unsafe { CheckCollisionPointRec(d.get_mouse_position().into(), text_box.into()) } {
+        (Color::new(91, 178, 217, 255), Color::new(108, 155, 188, 255), 1.0)
     } else {
         (Color::new(104, 104, 104, 255), Color::WHITE.alpha(0.0), 1.0)
     };
@@ -223,7 +223,7 @@ pub fn gui_check_box(d: &mut RaylibDrawHandle, idx: &mut i32, active_idx: i32, t
     d.draw_line_ex(rvec2(text_box.x + text_box.width, text_box.y + text_box.height), rvec2(text_box.x, text_box.y + text_box.height), outline_size, fg);
     d.draw_line_ex(rvec2(text_box.x, text_box.y + text_box.height), rvec2(text_box.x, text_box.y), outline_size, fg);
     if checked {
-        d.draw_rectangle(text_box.x as i32 + 2, text_box.y as i32 + 2, text_box.width as i32 - 3,  text_box.height as i32 - 3, fg);
+        d.draw_rectangle(text_box.x as i32 + 2, text_box.y as i32 + 2, text_box.width as i32 - 3,  text_box.height as i32 - 3, rect_c);
     }
     // d.gui_text_box(text_box, &mut buf, *idx == active_idx);
     *idx += 1;

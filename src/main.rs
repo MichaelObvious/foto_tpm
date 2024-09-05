@@ -157,7 +157,8 @@ enum UploadStatus {
     Error(String),
 }
 
-fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h: f32, font_size: i32) {
+fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: AppTab, w: f32, h: f32, font_size: i32) -> Option<AppTab> {
+    let mut next_tab = None;
     let button_count = AppTab::iter().count() as f32;
     let button_width = (w/(button_count+2.0)).max(100.0);
     let button_height = (h/20.0).max(10.0);
@@ -170,18 +171,18 @@ fn draw_tab_buttons(d: &mut RaylibDrawHandle, active_tab: &mut AppTab, w: f32, h
         let label = format!("{}", e);
         let label_width = d.measure_text(label.as_str(), font_size);
         
-        if d.gui_check_box(rect, None, &mut (e == *active_tab)) {
-            *active_tab = e;
+        if d.gui_check_box(rect, None, &mut (e == active_tab)) {
+            next_tab = Some(e);
         }       
         d.draw_text(label.as_str(),
             rect.x as i32 + (rect.width as i32 - label_width)/2,
             rect.y as i32 + (rect.height as i32 - font_size)/2,
             font_size,
-            if e == *active_tab {
-                Color::WHITE
-            } else {Color::GRAY}
-            );
+            if e == active_tab { Color::WHITE } else { Color::GRAY }
+        );
     }
+
+    return next_tab;
 }
 
 fn get_next_tab(current_tab: AppTab) -> AppTab {
@@ -285,8 +286,13 @@ fn gui_app() {
                 AppTab::InputData => {
                     if check_ctrl_shortcut(&rl, Some(KeyboardKey::KEY_TAB)) {
                         next_tab = get_next_tab(app_tab);
-                    } else if rl.is_key_pressed(KeyboardKey::KEY_TAB) {
-                        text_box_active = (text_box_active + 1) % 9;
+                    } else if rl.is_key_pressed(KeyboardKey::KEY_TAB) || is_key_pressed_repeat(KeyboardKey::KEY_TAB)  {
+                        let delta = if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SHIFT) {
+                            -1
+                        } else {
+                            1
+                        };
+                        text_box_active = (9 + text_box_active + delta) % 9;
                     }
                     
                     if rl.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
@@ -594,7 +600,9 @@ fn gui_app() {
         if !upload {
             match app_tab {
                 AppTab::InputData => {
-                    draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
+                    if let Some(tab) = draw_tab_buttons(&mut d, app_tab, w as f32, h as f32, font_size) {
+                        next_tab = tab;
+                    }
                     let mut idx = 0;
                     gui_text_input(&mut d, &mut idx, text_box_active, "Titolo dell'attività", &mut titolo_buf, font_size, titolo_rect);
                     gui_text_input(&mut d, &mut idx, text_box_active, "Branca", &mut branca_buf, font_size, branca_rect);
@@ -625,11 +633,17 @@ fn gui_app() {
                 },
                 AppTab::SelectionLab => {
                     if images.is_empty() {
-                        draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
+                        if let Some(tab) = draw_tab_buttons(&mut d, app_tab, w as f32, h as f32, font_size) {
+                            next_tab = tab;
+                        }
 
                         let drop_text = "Rilasci le foto";
                         let drop_text_width = d.measure_text(drop_text, font_size*2);
                         d.draw_text(drop_text, (w-drop_text_width)/2, h*3/7, font_size*2, Color::WHITE);
+
+                        let version_font_size = font_size * 9 / 10;
+                        let version_text_size = d.measure_text(&version_text, version_font_size);
+                        d.draw_text(&version_text, w-version_text_size - 10, h-version_font_size - 5, version_font_size, Color::WHITE.alpha(0.5));
                     } else if !file_queue.is_empty() || last_image_loaded {
                         let load_text = format!("Caricando {} foto{}", file_queue.len(), match (d.get_time() as u32) % 4 {
                             0 => "",
@@ -666,7 +680,9 @@ fn gui_app() {
                         let img_y = (h as f32 / 5.0).max(167.0);
                         d.draw_texture_ex(&images[file_list_active as usize].texture, rvec2(img_x, img_y), 0.0, scale, Color::WHITE);
 
-                        draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
+                        if let Some(tab) = draw_tab_buttons(&mut d, app_tab, w as f32, h as f32, font_size) {
+                            next_tab = tab;
+                        }
 
 
                         let upload_text_cstr = CString::new(upload_text).unwrap_or_default();
@@ -847,7 +863,7 @@ fn gui_app() {
                     if d.gui_button(rrect((w as f32 - back_button_width) / 2.0, h as f32 * 3.0/7.0 + font_size as f32*3.0 + back_button_height/2.0, back_button_width, back_button_height ), Some(back_text.as_c_str())) {
                         upload = false;
                         upload_status = UploadStatus::None;
-                        app_tab = AppTab::InputData;
+                        next_tab = AppTab::InputData;
                     }
                 },
                 UploadStatus::Done => {
