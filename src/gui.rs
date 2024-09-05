@@ -8,6 +8,32 @@ pub fn is_key_pressed_repeat(key: KeyboardKey) -> bool {
     unsafe { IsKeyPressedRepeat(key as i32) }
 }
 
+pub fn check_ctrl_shortcut(rl: &RaylibHandle, key: Option<KeyboardKey>) -> bool {
+    let control =  if cfg!(target_os = "macos") {
+        rl.is_key_down(KeyboardKey::KEY_LEFT_SUPER) || rl.is_key_down(KeyboardKey::KEY_RIGHT_SUPER)
+    } else {
+        rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL)
+    };
+
+    if let Some(key) = key {
+        return control && (rl.is_key_pressed(key) || is_key_pressed_repeat(key));
+    }
+    
+    return control;
+}
+
+pub fn draw_outlined_text(d: &mut RaylibDrawHandle, text: &str, x: i32, y: i32, font_size: i32, outline_size: i32, color: Color, outline_color: Color) {
+    d.draw_text(text, x - outline_size, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x, y - outline_size, font_size, outline_color);
+    d.draw_text(text, x, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x - outline_size, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y + outline_size, font_size, outline_color);
+    d.draw_text(text, x - outline_size, y, font_size, outline_color);
+    d.draw_text(text, x + outline_size, y, font_size, outline_color);
+    d.draw_text(text, x, y, font_size, color);
+}
+
 pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index: &mut i32, buffer: &mut Vec<u8>, max_len: usize, text_box: Rectangle) {
 
     let mouse_pressed = rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
@@ -37,7 +63,7 @@ pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index:
             }
         }
 
-        if rl.is_key_pressed(KeyboardKey::KEY_V) && (rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL)) {
+        if check_ctrl_shortcut(rl, Some(KeyboardKey::KEY_V)) {
             if let Ok(x) = rl.get_clipboard_text() {
                 for c in x.chars() {
                     let c = c as u8;
@@ -53,7 +79,7 @@ pub fn gui_text_input_update(rl: &mut RaylibHandle, idx: &mut i32, active_index:
 
         if rl.is_key_pressed(KeyboardKey::KEY_BACKSPACE) || is_key_pressed_repeat(KeyboardKey::KEY_BACKSPACE) {
             // println!("{:?}", buffer);
-            if rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) {
+            if check_ctrl_shortcut(rl, None) {
                 while buffer.last().unwrap_or(&(' ' as u8)).to_owned() != ' ' as u8 {
                     buffer.pop();
                 }
@@ -250,15 +276,3 @@ pub fn gui_seecret_text_input(d: &mut RaylibDrawHandle, idx: &mut i32, active_id
 //         // );}
 //     }
 // }
-
-pub fn draw_outlined_text(d: &mut RaylibDrawHandle, text: &str, x: i32, y: i32, font_size: i32, outline_size: i32, color: Color, outline_color: Color) {
-    d.draw_text(text, x - outline_size, y - outline_size, font_size, outline_color);
-    d.draw_text(text, x + outline_size, y - outline_size, font_size, outline_color);
-    d.draw_text(text, x, y - outline_size, font_size, outline_color);
-    d.draw_text(text, x, y + outline_size, font_size, outline_color);
-    d.draw_text(text, x - outline_size, y + outline_size, font_size, outline_color);
-    d.draw_text(text, x + outline_size, y + outline_size, font_size, outline_color);
-    d.draw_text(text, x - outline_size, y, font_size, outline_color);
-    d.draw_text(text, x + outline_size, y, font_size, outline_color);
-    d.draw_text(text, x, y, font_size, color);
-}

@@ -9,6 +9,7 @@ extern crate walkdir;
 use chrono::Local;
 use ffi::{GetCurrentMonitor, GetMonitorHeight, GetMonitorWidth};
 use ftp::FtpStream;
+use gui::{check_ctrl_shortcut, draw_outlined_text, gui_seecret_text_input, gui_text_input, is_key_pressed_repeat};
 use image::ImageReader;
 use image::{GenericImageView, DynamicImage};
 use path_slash::PathBufExt as _;
@@ -364,21 +365,21 @@ fn gui_app() {
                         let prev_file_list_active = file_list_active;
 
                         let fast_step = (images.len() as f32 / 10.0).ceil() as i32;
-                        if rl.is_key_down(KeyboardKey::KEY_LEFT_CONTROL) || rl.is_key_down(KeyboardKey::KEY_RIGHT_CONTROL) {
-                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
+                        if check_ctrl_shortcut(&rl, None) {
+                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || is_key_pressed_repeat(KeyboardKey::KEY_UP) {
                                 file_list_active -= fast_step;
                                 list_moved_by_key = true;
                             }
-                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
+                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
                                 file_list_active += fast_step;
                                 list_moved_by_key = true;
                             }
                         } else {
-                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || gui::is_key_pressed_repeat(KeyboardKey::KEY_UP) {
+                            if rl.is_key_pressed(KeyboardKey::KEY_UP) || is_key_pressed_repeat(KeyboardKey::KEY_UP) {
                                 file_list_active -= 1;
                                 list_moved_by_key = true;
                             }
-                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || gui::is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
+                            if rl.is_key_pressed(KeyboardKey::KEY_DOWN) || is_key_pressed_repeat(KeyboardKey::KEY_DOWN) {
                                 file_list_active += 1;
                                 list_moved_by_key = true;
                             }
@@ -570,14 +571,14 @@ fn gui_app() {
                 AppTab::InputData => {
                     draw_tab_buttons(&mut d, &mut app_tab, w as f32, h as f32, font_size);
                     let mut idx = 0;
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Titolo dell'attività", &mut titolo_buf, font_size, titolo_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Branca", &mut branca_buf, font_size, branca_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Giorno", &mut giorno_buf, font_size, giorno_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Mese", &mut mese_buf, font_size, mese_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Anno", &mut anno_buf, font_size, anno_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Server", &mut server_buf, font_size, server_rect);
-                    gui::gui_text_input(&mut d, &mut idx, text_box_active, "Utente", &mut utente_buf, font_size, utente_rect);
-                    gui::gui_seecret_text_input(&mut d, &mut idx, text_box_active, "Password", &mut pw_buf, font_size, pw_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Titolo dell'attività", &mut titolo_buf, font_size, titolo_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Branca", &mut branca_buf, font_size, branca_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Giorno", &mut giorno_buf, font_size, giorno_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Mese", &mut mese_buf, font_size, mese_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Anno", &mut anno_buf, font_size, anno_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Server", &mut server_buf, font_size, server_rect);
+                    gui_text_input(&mut d, &mut idx, text_box_active, "Utente", &mut utente_buf, font_size, utente_rect);
+                    gui_seecret_text_input(&mut d, &mut idx, text_box_active, "Password", &mut pw_buf, font_size, pw_rect);
 
                     // let hd_text = CString::new("HD (prima di caricare le foto)").unwrap();
 
@@ -665,7 +666,7 @@ fn gui_app() {
                         {
                             let load_text = format!("{}/{}", file_list_active+1, images.len());
                             let load_text_width = d.measure_text(load_text.as_str(), font_size);
-                            gui::draw_outlined_text(&mut d, load_text.as_str(), w*5/8 - load_text_width/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
+                            draw_outlined_text(&mut d, load_text.as_str(), w*5/8 - load_text_width/2, h-font_size, font_size, 2, Color::WHITE, Color::BLACK);
                         }
 
                         let item_height = d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_HEIGHT as i32) + d.gui_get_style(GuiControl::LISTVIEW, GuiListViewProperty::LIST_ITEMS_SPACING as i32);
@@ -733,7 +734,7 @@ fn gui_app() {
                             
                             let num_text = format!("{}", i+file_list_scroll_index as usize + 1);
                             let outline_size = 2;
-                            gui::draw_outlined_text(&mut d, &num_text, x as i32 + outline_size * 2, y as i32 + outline_size + 1, font_size, outline_size, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
+                            draw_outlined_text(&mut d, &num_text, x as i32 + outline_size * 2, y as i32 + outline_size + 1, font_size, outline_size, Color::WHITE.alpha(color_fade), Color::BLACK.alpha(color_fade/2.0));
                         }
                         
                         file_list_scroll_index += scroll_idx;
@@ -837,7 +838,7 @@ fn gui_app() {
             
         }
         // d.draw_text(title, (w-title_width)/2, 25, font_size * 3, THEME_COLOR);
-        gui::draw_outlined_text(&mut d, title, (w-title_width)/2, 25, font_size*3, font_size/10, THEME_COLOR, THEME_COLOR);
+        draw_outlined_text(&mut d, title, (w-title_width)/2, 25, font_size*3, font_size/10, THEME_COLOR, THEME_COLOR);
     }
 
     if !images.is_empty() {
