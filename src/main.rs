@@ -277,6 +277,8 @@ fn gui_app() {
     let mut files_to_upload = Vec::new();
 
     while !rl.window_should_close() {
+        let new_files = check_images_paths(&rl.load_dropped_files().paths());
+        file_queue.append(&mut new_files.into());
 
         if !upload {
             app_tab = next_tab;
@@ -332,9 +334,6 @@ fn gui_app() {
                     gui_check_box_update(&mut rl, &mut idx, &mut text_box_active, hd_rect, &mut hd_images);
                 },
                 AppTab::SelectionLab => {
-                    let new_files = check_images_paths(&rl.load_dropped_files().paths());
-                    file_queue.append(&mut new_files.into());
-
                     if last_image_loaded {
                         thread::sleep(Duration::from_millis(500));
                         last_image_loaded = false;
@@ -626,6 +625,13 @@ fn gui_app() {
                     d.draw_text(hd_text, (hd_rect.x + hd_rect.width * 2.0) as i32, (hd_rect.y + hd_rect.height) as i32 - font_size, font_size, hd_color);
                     let small_font_size = font_size * 3 / 4;
                     d.draw_text("(premere prima di importare le foto)", (hd_rect.x + hd_rect.width * 2.0) as i32 + hd_text_size, (hd_rect.y + hd_rect.height) as i32 - small_font_size, small_font_size, hd_color);
+                    
+                    if file_queue.len() > 0 {
+                        let small_font_size = font_size;
+                        let text = format!("{} fotografie in attesa di caricamento", file_queue.len());
+                        let text_size = d.measure_text(&text, small_font_size);
+                        d.draw_text(&text, (w - text_size)/2, h-small_font_size-15, small_font_size, Color::WHITE);
+                    }
                     
                     let version_font_size = font_size * 9 / 10;
                     let version_text_size = d.measure_text(&version_text, version_font_size);
